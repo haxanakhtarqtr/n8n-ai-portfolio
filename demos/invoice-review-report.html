@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Invoice Validation</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+    background: #f6f7f9; color: #1f2328; font-size: 14px;
+    padding: 28px 32px;
+  }
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+  .topbar h1 { font-size: 16px; font-weight: 600; color: #1f2328; }
+  .topbar .sub { font-size: 12px; color: #6a737d; margin-top: 2px; }
+  .pill {
+    font-size: 12px; font-weight: 600; padding: 4px 12px; border-radius: 3px;
+    background: #ffebe9; color: #cf222e; border: 1px solid #ff818266;
+  }
+  .layout { display: grid; grid-template-columns: 440px 1fr; gap: 20px; align-items: start; }
+  .panel {
+    background: #fff; border: 1px solid #d0d7de; border-radius: 6px;
+  }
+  .panel-head {
+    padding: 10px 14px; border-bottom: 1px solid #d0d7de; font-size: 12px;
+    font-weight: 600; color: #57606a; text-transform: uppercase; letter-spacing: 0.4px;
+  }
+  .doc {
+    padding: 14px 16px; font-family: Consolas, 'Courier New', monospace;
+    font-size: 12.5px; line-height: 1.55; color: #24292f; white-space: pre-wrap;
+  }
+  .doc .hl { background: #fff8c5; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  td { padding: 7px 14px; border-bottom: 1px solid #eaeef2; vertical-align: top; }
+  td.k { color: #57606a; width: 130px; }
+  td.v { color: #1f2328; font-weight: 500; }
+  .money { text-align: right; font-variant-numeric: tabular-nums; }
+  tr.total td { background: #f6f8fa; font-weight: 600; }
+  .section-title {
+    padding: 10px 14px; border-bottom: 1px solid #d0d7de; border-top: 1px solid #d0d7de;
+    font-size: 12px; font-weight: 600; color: #57606a; text-transform: uppercase;
+    letter-spacing: 0.4px; margin-top: 16px; background: #f6f8fa;
+  }
+  .alert {
+    margin: 12px 14px; padding: 10px 12px; border-radius: 4px; font-size: 13px; line-height: 1.5;
+  }
+  .alert.err { background: #ffebe9; border: 1px solid #ff818266; color: #86181d; }
+  .alert.warn { background: #fff8c5; border: 1px solid #d4a72c66; color: #4d2d00; }
+  .alert b { font-weight: 600; }
+  .meta { padding: 0 14px 12px; font-size: 12px; color: #6a737d; }
+  .diff { font-weight: 700; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div>
+    <h1>Invoice validation &mdash; INV-2026-00912</h1>
+    <div class="sub">Vendor: Doha Office Supplies Co. &middot; received 24 Oct, 11:26 &middot; source: email attachment</div>
+  </div>
+  <span class="pill">Needs review</span>
+</div>
+
+<div class="layout">
+  <div class="panel">
+    <div class="panel-head">Original document</div>
+    <div class="doc">DOHA OFFICE SUPPLIES CO.
+Tax ID: QAR-TIN-100998877
+
+TAX INVOICE
+Invoice No: INV-2026-00912
+Invoice Date: 2026-10-20
+Due Date: <span class="hl">2026-10-10</span>
+Payment Terms: Net 15
+
+1. Office Chairs   Qty 10 x 350.00   3,500.00
+2. Desks           Qty  5 x 800.00   4,000.00
+
+Subtotal:            7,500.00
+VAT (5%):              375.00
+<span class="hl">TOTAL DUE:            8,200.00</span></div>
+  </div>
+
+  <div>
+    <div class="panel">
+      <div class="panel-head">Extracted data</div>
+      <table>
+        <tr><td class="k">Vendor</td><td class="v">Doha Office Supplies Co.</td></tr>
+        <tr><td class="k">Tax ID</td><td class="v">QAR-TIN-100998877</td></tr>
+        <tr><td class="k">Invoice no.</td><td class="v">INV-2026-00912</td></tr>
+        <tr><td class="k">PO number</td><td class="v" style="color:#6a737d">not stated</td></tr>
+        <tr><td class="k">Invoice date</td><td class="v">2026-10-20</td></tr>
+        <tr><td class="k">Due date</td><td class="v">2026-10-10</td></tr>
+        <tr><td class="k">Currency</td><td class="v">QAR</td></tr>
+        <tr><td class="k">Subtotal</td><td class="v money">7,500.00</td></tr>
+        <tr><td class="k">VAT (5%)</td><td class="v money">375.00</td></tr>
+        <tr class="total"><td class="k">Total (as stated)</td><td class="v money">8,200.00</td></tr>
+        <tr><td class="k">Line items</td><td class="v">2 &middot; Office Chairs (3,500.00), Desks (4,000.00)</td></tr>
+      </table>
+    </div>
+
+    <div class="panel" style="margin-top:16px">
+      <div class="panel-head">Validation</div>
+      <div class="alert err"><b>MATH_MISMATCH</b> &mdash; subtotal 7,500.00 + VAT 375.00 = 7,875.00, but the invoice states 8,200.00. <span class="diff">Difference: 325.00 QAR.</span> Payment held.</div>
+      <div class="alert warn"><b>DATE_ORDER</b> &mdash; due date 2026-10-10 falls before the invoice date 2026-10-20.</div>
+      <div class="meta">Routed to: Finance review queue &middot; checks: 5 passed, 1 failed, 1 warning &middot; 2.4s</div>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

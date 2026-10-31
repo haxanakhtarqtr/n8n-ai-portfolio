@@ -1,0 +1,13 @@
+Last night I ran a small experiment on an invoice bot I've been building.
+
+The bot is made with n8n and Mistral AI. You paste raw invoice text, it pulls out all the fields (vendor, tax id, dates, line items) and checks the math before anything gets approved for payment.
+
+So I planted a fake error on purpose. Took a normal invoice, subtotal 7,500 plus VAT 375, real total should be 7,875. I changed it to 8,200.
+
+It caught it in seconds. Flagged the math mismatch and sent it for review instead of approving it. Then I gave it a clean invoice and that one passed with zero flags.
+
+I've worked in finance and insurance for more than 15 years. Manual invoice checking was always the boring part of the job, and bored people miss things. This is the kind of tool that quietly saves you from expensive mistakes.
+
+This was one of 5 automations I've built recently. The others handle WhatsApp leads, email triage, insurance claims and a live dashboard. Happy to share them if anyone is interested.
+
+#automation #n8n #ai #qatar

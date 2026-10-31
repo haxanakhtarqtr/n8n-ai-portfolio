@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Insurance Claim Intake Bot — Live Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #34d399; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 20px; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  label { display: block; font-size: 0.78rem; color: #94a3b8; margin: 10px 0 4px; }
+  input, select, textarea {
+    width: 100%; background: #0f172a; color: #cbd5e1; border: 1px solid #334155;
+    border-radius: 8px; padding: 10px 12px; font-size: 0.88rem;
+  }
+  textarea { height: 140px; font-size: 0.82rem; resize: vertical; }
+  input:focus, textarea:focus, select:focus { outline: none; border-color: #34d399; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: #10b981; color: white; flex-grow: 1; }
+  .btn-primary:hover { background: #059669; transform: translateY(-1px); }
+  .btn-primary:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .btn-sample { background: #334155; color: #cbd5e1; font-size: 0.75rem; padding: 8px 10px; }
+  .btn-sample:hover { background: #475569; }
+  .decision-banner {
+    padding: 14px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 700;
+    display: none; font-size: 1rem; text-align: center;
+  }
+  .d-auto_settle { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .d-fast_track { background: #082f49; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .d-underwriter_review { background: #451a03; border: 1px solid #f59e0b; color: #fcd34d; display: block; }
+  .d-investigate { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .d-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kv { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; }
+  .kv .val { font-size: 1.05rem; font-weight: 700; color: #f1f5f9; }
+  .kv .lbl { font-size: 0.68rem; color: #64748b; margin-top: 2px; }
+  .fraud-meter { height: 10px; background: #334155; border-radius: 5px; margin-top: 8px; overflow: hidden; }
+  .fraud-fill { height: 100%; border-radius: 5px; }
+  section.result-block { margin-bottom: 12px; }
+  section.result-block h3 { font-size: 0.78rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .box {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px;
+    padding: 12px 14px; font-size: 0.85rem; line-height: 1.5;
+  }
+  .box-docs { border-color: #38bdf8; color: #bae6fd; }
+  .box-reply { border-color: #22c55e; border-left: 4px solid #22c55e; color: #d1fae5; }
+  .flag-line { padding: 6px 10px; border-radius: 6px; margin-bottom: 6px; font-size: 0.78rem; font-family: 'Consolas', monospace; }
+  .f-ERROR { background: #450a0a; border-left: 3px solid #ef4444; color: #fca5a5; }
+  .f-WARNING { background: #451a03; border-left: 3px solid #f59e0b; color: #fcd34d; }
+  .f-INFO { background: #082f49; border-left: 3px solid #3b82f6; color: #93c5fd; }
+  .indicator { display: inline-block; background: #450a0a; border: 1px solid #7f1d1d; color: #fca5a5; padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; margin: 2px; font-family: 'Consolas', monospace; }
+  .placeholder { color: #64748b; text-align: center; padding: 60px 20px; font-size: 0.9rem; }
+  .meta { color: #64748b; font-size: 0.75rem; margin-top: 8px; text-align: right; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #34d399; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>⚖️ Insurance Claim Intake Bot</h1>
+    <p>AI claim extraction + deterministic underwriting rules — coverage checks, fraud scoring &amp; settlement routing · n8n + Mistral AI</p>
+    <div class="badges">
+      <span class="badge">Coverage Matrix</span>
+      <span class="badge">Fraud Scoring</span>
+      <span class="badge">Auto-Settle &lt; QAR 2k</span>
+      <span class="badge">SIU Routing</span>
+      <span class="badge">Claims Audit Log</span>
+      <span class="badge">Underwriter Alerts</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>📋 Claim Submission</h2>
+      <div class="row2">
+        <div><label>Policy Number</label><input id="policy_number" type="text" placeholder="MTR-2026-0001"></div>
+        <div><label>Policy Type</label>
+          <select id="policy_type">
+            <option value="motor">Motor</option>
+            <option value="fire">Fire</option>
+            <option value="marine">Marine</option>
+            <option value="machinery">Machinery</option>
+            <option value="property">Property</option>
+            <option value="health">Health</option>
+            <option value="comprehensive">Comprehensive</option>
+          </select>
+        </div>
+      </div>
+      <div class="row2">
+        <div><label>Claimant Name</label><input id="claimant_name" type="text" placeholder="Full name / company"></div>
+        <div><label>Claimed Amount (QAR)</label><input id="claimed_amount" type="number" placeholder="e.g. 1450"></div>
+      </div>
+      <div class="row2">
+        <div><label>Incident Date</label><input id="incident_date" type="date"></div>
+        <div><label>Report Date</label><input id="report_date" type="date"></div>
+      </div>
+      <label>Incident Description</label>
+      <textarea id="description" placeholder="Describe what happened, mention police report, photos, third party..."></textarea>
+      <div class="btn-row">
+        <button class="btn-sample" onclick="loadSample('clean')">✅ Sample: Clean Motor Claim</button>
+        <button class="btn-sample" onclick="loadSample('mismatch')">⚠️ Sample: Wrong Policy Type</button>
+        <button class="btn-sample" onclick="loadSample('suspicious')">🚨 Sample: Suspicious Claim</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="submitBtn" onclick="submitClaim()">⚖️ Assess Claim</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Claim Decision</h2>
+      <div id="decisionBanner" class="decision-banner"></div>
+      <div id="resultArea"><div class="placeholder">Decision will appear here after assessment</div></div>
+      <div class="meta" id="metaInfo"></div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo · 15+ yrs insurance &amp; finance background</footer>
+</div>
+
+<script>
+const WEBHOOK_URL = 'http://localhost:5678/webhook/insurance-claim';
+
+const SAMPLES = {
+  clean: {
+    policy_number: 'MTR-2026-4471', policy_type: 'motor', claimant_name: 'Khalid Al-Sulaiti',
+    incident_date: '2026-10-22', report_date: '2026-10-24', claimed_amount: 1450,
+    description: 'Minor bumper damage in parking lot at City Center Mall. Rear-ended while parked. Police report filed same day, reference PR-88231. Photos taken, repair estimate from authorized dealer attached for QAR 1,450. Third party driver admitted fault and shared license copy.'
+  },
+  mismatch: {
+    policy_number: 'MTR-2024-9912', policy_type: 'motor', claimant_name: 'Sara Trading W.L.L.',
+    incident_date: '2026-10-18', report_date: '2026-10-23', claimed_amount: 45000,
+    description: 'Warehouse fire destroyed office furniture and electronics stored on premises. Fire brigade attended, report available. Photos and damage inventory prepared. Claiming QAR 45,000 total loss.'
+  },
+  suspicious: {
+    policy_number: 'MTR-2025-3388', policy_type: 'motor', claimant_name: 'Mohammed Iqbal',
+    incident_date: '2026-08-10', report_date: '2026-10-24', claimed_amount: 38000,
+    description: 'Car was badly damaged. I need the money urgently, please settle immediately, I cannot wait weeks. The other driver drove off, I did not get police involved at the time. I do not have photos right now but the damage was very bad, worth more than what I am asking. I had another small claim earlier this year too. Please pay fast, I am in financial pressure.'
+  }
+};
+
+function loadSample(type) {
+  const s = SAMPLES[type];
+  const fields = ['policy_number', 'claimant_name', 'incident_date', 'report_date', 'claimed_amount', 'description'];
+  for (const f of fields) document.getElementById(f).value = s[f];
+  document.getElementById('policy_type').value = s.policy_type;
+}
+
+function esc(s) { return String(s == null ? '' : s); }
+
+async function submitClaim() {
+  const payload = {
+    policy_number: document.getElementById('policy_number').value.trim() || 'UNKNOWN',
+    policy_type: document.getElementById('policy_type').value,
+    claimant_name: document.getElementById('claimant_name').value.trim() || 'unknown',
+    contact: '',
+    incident_date: document.getElementById('incident_date').value || null,
+    report_date: document.getElementById('report_date').value || new Date().toISOString().substring(0, 10),
+    claimed_amount: document.getElementById('claimed_amount').value ? Number(document.getElementById('claimed_amount').value) : null,
+    description: document.getElementById('description').value.trim(),
+    channel: 'form'
+  };
+  if (!payload.description) { alert('Please enter a claim description or load a sample.'); return; }
+
+  const banner = document.getElementById('decisionBanner');
+  const resultArea = document.getElementById('resultArea');
+  const btn = document.getElementById('submitBtn');
+  const meta = document.getElementById('metaInfo');
+
+  btn.disabled = true; btn.textContent = '⏳ Assessing...';
+  banner.className = 'decision-banner d-loading';
+  banner.textContent = '🤖 AI extracting claim facts + rules engine evaluating...';
+  resultArea.innerHTML = '<div class="placeholder">Waiting for n8n workflow response...</div>';
+  const startTime = performance.now();
+
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+    const c = data.claim || {};
+
+    const bannerText = {
+      auto_settle: '✅ ' + data.decision_label + ' — settlement within ' + data.sla_target,
+      fast_track: '🔵 ' + data.decision_label + ' — decision within ' + data.sla_target,
+      underwriter_review: '🟠 ' + data.decision_label + ' — ' + data.sla_target + ' · Mattermost alert sent',
+      investigate: '🔴 ' + data.decision_label + ' — ' + data.sla_target + ' · Mattermost alert sent'
+    };
+    banner.className = 'decision-banner d-' + data.status;
+    banner.textContent = bannerText[data.status] || data.decision_label;
+
+    const fraudPct = Math.min(100, (data.fraud_score || 0) * 20);
+    const fraudColor = data.fraud_score >= 3 ? '#ef4444' : data.fraud_score >= 1 ? '#f59e0b' : '#22c55e';
+    const coveredText = data.covered === true ? '✅ Covered' : data.covered === false ? '❌ NOT Covered' : '❓ Verify Policy';
+
+    let html = '<div class="kv-grid">' +
+      '<div class="kv"><div class="val">' + coveredText + '</div><div class="lbl">COVERAGE VERDICT</div></div>' +
+      '<div class="kv"><div class="val">QAR ' + (c.claimed_amount ? Number(c.claimed_amount).toLocaleString() : '—') + '</div><div class="lbl">CLAIMED · ' + esc(c.loss_band || '').replace(/_/g, ' ') + '</div></div>' +
+      '<div class="kv"><div class="val">' + (c.claim_type || '—').toUpperCase() + '</div><div class="lbl">CLAIM TYPE · policy: ' + esc(c.policy_type) + '</div></div>' +
+      '<div class="kv"><div class="val" style="color:' + fraudColor + '">' + (data.fraud_score || 0) + '</div><div class="lbl">FRAUD SCORE' +
+      '<div class="fraud-meter"><div class="fraud-fill" style="width:' + fraudPct + '%;background:' + fraudColor + '"></div></div></div></div>' +
+      '</div>';
+
+    if (c.incident_summary) {
+      html += '<section class="result-block"><h3>Incident Summary</h3><div class="box">' + esc(c.incident_summary) + '</div></section>';
+    }
+    if (data.fraud_indicators && data.fraud_indicators.length) {
+      html += '<section class="result-block"><h3>Fraud Indicators (' + data.fraud_indicators.length + ')</h3>';
+      for (const ind of data.fraud_indicators) html += '<span class="indicator">🚩 ' + esc(ind).replace(/_/g, ' ') + '</span>';
+      html += '</section>';
+    }
+    if (data.flags && data.flags.length) {
+      html += '<section class="result-block"><h3>Rules Engine Flags</h3>';
+      for (const f of data.flags) {
+        html += '<div class="flag-line f-' + f.severity + '"><strong>' + esc(f.code) + '</strong> — ' + esc(f.message) + '</div>';
+      }
+      html += '</section>';
+    }
+    if (c.documents_needed && c.documents_needed.length) {
+      html += '<section class="result-block"><h3>Documents Required</h3><div class="box box-docs">📄 ' + c.documents_needed.map(esc).join(' · 📄 ') + '</div></section>';
+    }
+    if (data.claimant_reply) {
+      html += '<section class="result-block"><h3>✉️ Claimant Notification (auto-drafted)</h3><div class="box box-reply">' + esc(data.claimant_reply) + '</div></section>';
+    }
+    if (c.delay_days !== null && c.delay_days !== undefined) {
+      html += '<section class="result-block"><div class="box" style="color:#94a3b8;font-size:0.78rem">🕐 Reported ' + c.delay_days + ' day(s) after incident · SLA target: ' + esc(data.sla_target) + ' · delay limit: 30 days</div></section>';
+    }
+
+    resultArea.innerHTML = html;
+    meta.textContent = '⏱ ' + elapsed + 's · ' + new Date().toLocaleTimeString() + ' · audit logged to Claims_Log';
+  } catch (err) {
+    banner.className = 'decision-banner d-investigate';
+    banner.textContent = '❌ ERROR — Could not reach n8n workflow. Is n8n running on localhost:5678?';
+    resultArea.innerHTML = '<div class="placeholder">' + err.message + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '⚖️ Assess Claim';
+  }
+}
+</script>
+</body>
+</html>

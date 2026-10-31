@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Invoice Extractor (IDP) — Live Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #38bdf8; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; display: flex; align-items: center; gap: 8px; }
+  textarea {
+    width: 100%; height: 320px; background: #0f172a; color: #cbd5e1;
+    border: 1px solid #334155; border-radius: 8px; padding: 14px;
+    font-family: 'Consolas', monospace; font-size: 0.82rem; resize: vertical;
+  }
+  textarea:focus { outline: none; border-color: #38bdf8; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: #0ea5e9; color: white; flex-grow: 1; }
+  .btn-primary:hover { background: #0284c7; transform: translateY(-1px); }
+  .btn-primary:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .btn-sample { background: #334155; color: #cbd5e1; font-size: 0.78rem; padding: 8px 12px; }
+  .btn-sample:hover { background: #475569; }
+  .status-banner {
+    padding: 12px 16px; border-radius: 8px; margin-bottom: 16px;
+    font-weight: 600; display: none; font-size: 0.95rem;
+  }
+  .status-valid { background: #14532d; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .status-review { background: #7f1d1d; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .status-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid #334155; }
+  th { color: #94a3b8; font-weight: 600; width: 40%; }
+  td { color: #e2e8f0; font-family: 'Consolas', monospace; word-break: break-all; }
+  .flag {
+    padding: 10px 14px; border-radius: 8px; margin-bottom: 8px; font-size: 0.82rem;
+    font-family: 'Consolas', monospace;
+  }
+  .flag-error { background: #450a0a; border-left: 4px solid #ef4444; color: #fca5a5; }
+  .flag-warning { background: #451a03; border-left: 4px solid #f59e0b; color: #fcd34d; }
+  .flag-info { background: #082f49; border-left: 4px solid #3b82f6; color: #93c5fd; }
+  .placeholder { color: #64748b; text-align: center; padding: 60px 20px; font-size: 0.9rem; }
+  .meta { color: #64748b; font-size: 0.75rem; margin-top: 8px; text-align: right; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #38bdf8; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🧾 AI Invoice &amp; Document Extractor</h1>
+    <p>Intelligent Document Processing (IDP) — n8n + Mistral AI · Extract, Validate &amp; Flag in seconds</p>
+    <div class="badges">
+      <span class="badge">n8n Workflow</span>
+      <span class="badge">Mistral AI</span>
+      <span class="badge">Finance-Grade Validation</span>
+      <span class="badge">Google Sheets Log</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>📄 Invoice Input <span style="color:#64748b;font-size:0.78rem;font-weight:400">(raw text)</span></h2>
+      <textarea id="invoiceText" placeholder="Paste any invoice text here... or click a sample below"></textarea>
+      <div class="btn-row">
+        <button class="btn-sample" onclick="loadSample('valid')">📋 Sample: Valid Invoice</button>
+        <button class="btn-sample" onclick="loadSample('trap')">🚨 Sample: Corrupted (math error)</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="extractBtn" onclick="extract()">⚡ Extract with AI</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Extraction Result</h2>
+      <div id="statusBanner" class="status-banner"></div>
+      <div id="resultArea"><div class="placeholder">Result will appear here after extraction</div></div>
+      <div class="meta" id="metaInfo"></div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo</footer>
+</div>
+
+<script>
+const WEBHOOK_URL = 'http://localhost:5678/webhook/idp-invoice';
+
+const SAMPLES = {
+  valid: `GULF TECHNICAL SERVICES W.L.L.
+Tax ID: QAR-TIN-100234567
+P.O. Box 23445, Doha, Qatar
+
+TAX INVOICE
+Invoice No: INV-2026-00847
+PO Number: PO-5521
+Invoice Date: 2026-10-15
+Payment Terms: Net 30 days
+
+Bill To: Feni Trading and Contracting, Doha
+
+1. Annual Software Maintenance - ERP Module | Qty: 1 | Unit Price: 12,000.00 | Amount: 12,000.00
+2. On-site Technical Support (40 hrs) | Qty: 40 | Unit Price: 150.00 | Amount: 6,000.00
+3. Data Migration Assistance | Qty: 1 | Unit Price: 2,000.00 | Amount: 2,000.00
+
+Subtotal: QAR 20,000.00
+VAT (5%): QAR 1,000.00
+TOTAL DUE: QAR 21,000.00
+
+Due Date: 2026-11-14
+Bank: QNB, IBAN QA58 DOHB 0000 1234 5678 9012 345`,
+
+  trap: `DOHA OFFICE SUPPLIES CO.
+Tax ID: QAR-TIN-100998877
+TAX INVOICE
+Invoice No: INV-2026-00912
+Invoice Date: 2026-10-20
+Due Date: 2026-10-10
+Payment Terms: Net 15
+
+1. Office Chairs | Qty: 10 | Unit Price: 350.00 | Amount: 3,500.00
+2. Desks | Qty: 5 | Unit Price: 800.00 | Amount: 4,000.00
+
+Subtotal: QAR 7,500.00
+VAT (5%): QAR 375.00
+TOTAL DUE: QAR 8,200.00`
+};
+
+function loadSample(type) {
+  document.getElementById('invoiceText').value = SAMPLES[type];
+}
+
+async function extract() {
+  const text = document.getElementById('invoiceText').value.trim();
+  const banner = document.getElementById('statusBanner');
+  const resultArea = document.getElementById('resultArea');
+  const btn = document.getElementById('extractBtn');
+  const meta = document.getElementById('metaInfo');
+
+  if (!text) { alert('Please paste invoice text or load a sample first.'); return; }
+
+  btn.disabled = true; btn.textContent = '⏳ Extracting...';
+  banner.className = 'status-banner status-loading';
+  banner.textContent = '🤖 AI extraction in progress... (Mistral + validation engine)';
+  resultArea.innerHTML = '<div class="placeholder">Waiting for n8n workflow response...</div>';
+  const startTime = performance.now();
+
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ rawText: text })
+    });
+    const data = await response.json();
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+
+    if (data.status === 'valid') {
+      banner.className = 'status-banner status-valid';
+      banner.textContent = '✅ VALID — All checks passed. Auto-approved for logging.';
+    } else {
+      banner.className = 'status-banner status-review';
+      banner.textContent = '🚨 NEEDS REVIEW — Validation issues detected, routed to finance channel.';
+    }
+
+    let html = '<h2 style="font-size:0.9rem;color:#94a3b8;margin:10px 0 8px">Extracted Fields</h2><table>';
+    const inv = data.invoice || {};
+    const fields = [
+      ['Vendor', inv.vendor_name], ['Tax ID', inv.vendor_tax_id],
+      ['Invoice #', inv.invoice_number], ['PO Number', inv.po_number],
+      ['Invoice Date', inv.invoice_date], ['Due Date', inv.due_date],
+      ['Currency', inv.currency], ['Subtotal', inv.subtotal],
+      ['Tax Rate', inv.tax_rate ? inv.tax_rate + '%' : null], ['Tax Amount', inv.tax_amount],
+      ['Total', inv.total], ['Payment Terms', inv.payment_terms]
+    ];
+    for (const [label, val] of fields) {
+      html += '<tr><th>' + label + '</th><td>' + (val === null || val === undefined || val === '' ? '<span style="color:#64748b">—</span>' : val) + '</td></tr>';
+    }
+    if (Array.isArray(inv.line_items) && inv.line_items.length) {
+      html += '<tr><th>Line Items</th><td>' + inv.line_items.length + ' items · ' +
+        inv.line_items.map(i => (i.qty + '× ' + i.description + ' (' + i.amount + ')')).join(' · ') + '</td></tr>';
+    }
+    html += '</table>';
+
+    const flags = data.validation_flags || [];
+    if (flags.length) {
+      html += '<h2 style="font-size:0.9rem;color:#94a3b8;margin:16px 0 8px">Validation Flags (' + flags.length + ')</h2>';
+      for (const f of flags) {
+        html += '<div class="flag flag-' + f.severity.toLowerCase() + '">' +
+          '<strong>' + f.code + '</strong> [' + f.severity + ']<br>' + f.message + '</div>';
+      }
+    } else {
+      html += '<div class="flag flag-info" style="border-left-color:#22c55e;background:#052e16;color:#86efac">✅ ZERO FLAGS — All validation rules passed</div>';
+    }
+
+    resultArea.innerHTML = html;
+    meta.textContent = '⏱ ' + elapsed + 's · ' + new Date().toLocaleTimeString() + ' · logged: ' + (data.logged_to_sheets ? 'yes' : 'pending');
+  } catch (err) {
+    banner.className = 'status-banner status-review';
+    banner.textContent = '❌ ERROR — Could not reach n8n workflow. Is n8n running on localhost:5678?';
+    resultArea.innerHTML = '<div class="placeholder">' + err.message + '</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '⚡ Extract with AI';
+  }
+}
+</script>
+</body>
+</html>

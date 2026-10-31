@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hasan Akhtar — AI Automation Portfolio (n8n + LLM)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --b: #0f172a;
+            --c: #1e293b;
+            --t: #e2e8f0;
+            --m: #94a3b8;
+            --a: #38bdf8;
+            --g: #34d399;
+            --y: #fbbf24;
+            --p: #a78bfa;
+            --r: #ef4444;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, sans-serif;
+            color: var(--t);
+            min-height: 100vh;
+            line-height: 1.6;
+            background: radial-gradient(1200px 600px at 80% -100px, rgba(56, 189, 248, .07) 0%, transparent 50%),
+                linear-gradient(135deg, var(--b) 0%, #1e293b 100%);
+            overflow-x: hidden;
+        }
+
+        a {
+            color: inherit;
+            text-decoration: none;
+        }
+
+        ul {
+            list-style: none;
+        }
+
+        .wrap {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* NAV */
+        nav {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 64px;
+            background: rgba(15, 23, 42, .85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid #334155;
+            z-index: 100;
+        }
+
+        nav .wrap {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+        }
+
+        .logo {
+            font-size: 1.15rem;
+            font-weight: 800;
+            color: var(--a);
+        }
+
+        .logo span {
+            color: var(--t);
+            font-size: .9rem;
+            font-weight: 400;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 22px;
+        }
+
+        .nav-links a {
+            color: var(--m);
+            font-size: .86rem;
+            font-weight: 500;
+            transition: .2s;
+        }
+
+        .nav-links a:hover, .nav-links a.active {
+            color: var(--t);
+        }
+
+        .nav-links a.active {
+            border-bottom: 2px solid var(--a);
+        }
+
+        /* HERO */
+        .hero {
+            padding: 104px 0 56px;
+            text-align: center;
+        }
+
+        .hero h1 {
+            font-size: 2.6rem;
+            font-weight: 800;
+            line-height: 1.15;
+            margin-bottom: 8px;
+        }
+
+        .hero .grad {
+            background: linear-gradient(135deg, var(--a) 0%, var(--p) 50%, var(--g) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .lead {
+            color: var(--m);
+            font-size: 1.05rem;
+            max-width: 720px;
+            margin: 14px auto;
+        }
+
+        .badge-row {
+            margin-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+        }
+
+        .badge {
+            background: #1e293b;
+            border: 1px solid #334155;
+            color: var(--a);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: .77rem;
+            font-weight: 600;
+        }
+
+        .note {
+            color: var(--y);
+            margin-top: 14px;
+            font-size: .85rem;
+        }
+
+        /* SECTIONS */
+        section {
+            padding: 68px 0;
+        }
+
+        .sec-head {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .sec-head h2 {
+            font-size: 1.9rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .sec-head p {
+            color: var(--m);
+            font-size: .93rem;
+            max-width: 660px;
+            margin: 6px auto;
+        }
+
+        /* SKILLS */
+        .skill-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+            gap: 14px;
+        }
+
+        .skill {
+            background: var(--c);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .skill .icon {
+            font-size: 1.4rem;
+        }
+
+        .skill .label {
+            font-size: .86rem;
+            font-weight: 500;
+        }
+
+        .skill .dot {
+            color: var(--g);
+            font-weight: 700;
+            margin-left: auto;
+        }
+
+        /* PROJECTS */
+        .proj-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+
+        .proj {
+            background: var(--c);
+            border: 1px solid #334155;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, .25);
+            transition: transform .2s, box-shadow .2s;
+        }
+
+        .proj:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, .4);
+        }
+
+        .proj-head {
+            background: linear-gradient(135deg, rgba(56, 189, 248, .12), rgba(167, 139, 255, .12));
+            border-bottom: 1px solid #334155;
+            padding: 16px 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .proj-head .icon {
+            font-size: 1.3rem;
+        }
+
+        .proj-head h3 {
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .proj-body {
+            padding: 18px;
+        }
+
+        .proj-body p {
+            color: var(--m);
+            font-size: .9rem;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .result-chip {
+            display: inline-block;
+            background: rgba(34, 197, 94, .12);
+            border: 1px solid #22c55e;
+            color: #86efac;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-size: .68rem;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        .proj-foot {
+            padding: 14px 18px;
+            border-top: 1px solid #334155;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: .82rem;
+            font-weight: 600;
+            transition: .2s;
+        }
+
+        .btn-blue {
+            background: var(--a);
+            color: #052e16;
+            border: none;
+        }
+
+        .btn-blue:hover {
+            background: #0ea5e9;
+        }
+
+        .btn-s {
+            background: transparent;
+            border: 1px solid #475569;
+            color: var(--t);
+        }
+
+        .btn-s:hover {
+            background: #334155;
+        }
+
+        .tag {
+            font-size: .66rem;
+            background: #334155;
+            color: #cbd5e1;
+            padding: 2px 8px;
+            border-radius: 6px;
+            margin-left: auto;
+        }
+
+        /* ARCH */
+        .arch {
+            background: #0b1220;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 20px;
+            font-family: 'Consolas', monospace;
+            font-size: .8rem;
+            line-height: 1.7;
+            overflow-x: auto;
+            white-space: pre;
+        }
+
+        .arch .g {
+            color: var(--g)
+        }
+
+        .arch .a {
+            color: var(--a)
+        }
+
+        .arch .r {
+            color: var(--r)
+        }
+
+        .arch .p {
+            color: var(--p)
+        }
+
+        .arch .c {
+            color: var(--m)
+        }
+
+        .arch .y {
+            color: var(--y)
+        }
+
+        /* CONTACT */
+        .contact-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+            gap: 16px;
+            margin-top: 10px;
+        }
+
+        .c-card {
+            background: var(--c);
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 18px;
+            text-align: center;
+        }
+
+        .c-card .icon {
+            font-size: 1.4rem;
+            margin-bottom: 6px;
+        }
+
+        .c-card .label {
+            font-size: .74rem;
+            color: var(--m);
+            text-transform: uppercase;
+            letter-spacing: .5px;
+        }
+
+        .c-card a, .c-card div {
+            color: var(--a);
+            font-weight: 600;
+            font-size: .92rem;
+            margin-top: 4px;
+            display: block;
+        }
+
+        footer {
+            background: #070f1a;
+            border-top: 1px solid #334155;
+            padding: 26px 0;
+            text-align: center;
+            color: var(--m);
+            font-size: .84rem;
+        }
+
+        footer span {
+            color: var(--g);
+        }
+
+        /* Theme Toggle Button */
+        .theme-toggle {
+            position: fixed;
+            right: 22px;
+            top: 22px;
+            width: 44px;
+            height: 44px;
+            background: var(--c);
+            color: var(--t);
+            border: 1px solid #334155;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            z-index: 101;
+            transition: all 0.3s ease;
+        }
+
+        .theme-toggle:hover {
+            background: var(--a);
+            color: #052e16;
+        }
+
+        .back-top {
+            position: fixed;
+            right: 22px;
+            bottom: 22px;
+            width: 44px;
+            height: 44px;
+            background: var(--a);
+            color: #06281a;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.1rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: .3s;
+        }
+
+        .back-top.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        /* Dark Mode */
+        body.dark-mode {
+            --b: #0f172a;
+            --c: #1e293b;
+            --t: #f1f5f9;
+            --m: #94a3b8;
+        }
+
+        /* Animations */
+        .animate-on-scroll {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.6s ease-out, transform 0.6s ease-out;
+        }
+
+        .animate-on-scroll.animate {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .animate-on-scroll {
+            animation-fill-mode: forwards;
+        }
+
+        @media (max-width: 760px) {
+            nav .nav-links {
+                display: none;
+            }
+
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .theme-toggle {
+                right: 15px;
+                top: 15px;
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="wrap">
+            <div class="logo">Hasan Akhtar<span> • Doha, Qatar</span></div>
+            <div class="nav-links">
+                <a href="#skills">Skills</a>
+                <a href="#projects">Projects</a>
+                <a href="#architecture">Architecture</a>
+                <a href="#contact">Contact</a>
+                <a href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio" class="active">GitHub</a>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero">
+        <div class="wrap">
+            <h1><span class="grad">AI Automation</span> Specialist · n8n + LLM Engineer</h1>
+            <p class="lead">I build 5 production-tested AI pipelines — invoice extraction, WhatsApp lead CRM, email triage with sentiment, insurance underwriting & live ops dashboards — all orchestrated in n8n and powered by Mistral AI.</p>
+            <div class="badge-row">
+                <span class="badge">🧾 5 workflows, all tested live</span>
+                <span class="badge">⚡ 15+ yrs · AI · Sales · Insurance · Finance</span>
+                <span class="badge">🌍 Doha, Qatar · Open to GCC &amp; remote roles</span>
+            </div>
+            <div class="note">💡 Demos below run against n8n on localhost:5678. For public hosting, add an n8n tunnel &amp; set the <code>BASE_URL</code> constant at the top of each demo's JS.</div>
+        </div>
+    </section>
+
+    <section id="skills">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2>Core <span class="grad">Skills</span></h2>
+                <p>Twelve CV claims — each backed by a working pipeline below.</p>
+            </div>
+            <div class="skill-grid">
+                <div class="skill">
+                    <span class="icon">🧾</span>
+                    <div class="label">Intelligent Document Processing (IDP)</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">💬</span>
+                    <div class="label">WhatsApp Lead CRM</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">📧</span>
+                    <div class="label">Email Triage &amp; Sentiment Detection</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">📊</span>
+                    <div class="label">Live Operations Dashboards</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">⚖️</span>
+                    <div class="label">Insurance Underwriting &amp; Claims</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">🎯</span>
+                    <div class="label">Predictive Lead Scoring</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">💰</span>
+                    <div class="label">Quotation &amp; Reserve Generation</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">🤖</span>
+                    <div class="label">AI Workflow Automation (n8n)</div>
+                    <span class="dot">5/5</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">🔗</span>
+                    <div class="label">API Integrations &amp; Webhooks</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">📈</span>
+                    <div class="label">Process Optimization</div>
+                    <span class="dot">5/5</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">🛡️</span>
+                    <div class="label">Finance / Audit-Ready Logic</div>
+                    <span class="dot">✓</span>
+                </div>
+                <div class="skill">
+                    <span class="icon">☁️</span>
+                    <div class="label">Vercel &amp; Cloudflare Deployment</div>
+                    <span class="dot">5/5</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="projects">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2>Featured <span class="grad">AI Pipelines</span></h2>
+                <p>Each card runs a live demo against the real n8n instance.</p>
+            </div>
+            <div class="proj-grid">
+                <div class="proj">
+                    <div class="proj-head">
+                        <span class="icon">🧾</span>
+                        <h3>AI Invoice Extractor (IDP)</h3>
+                    </div>
+                    <div class="proj-body">
+                        <span class="result-chip">Caught a planted 325 QAR overcharge in testing</span>
+                        <p>Mistral extracts 15+ fields; deterministic tax-math + date validation flags errors before payment.</p>
+                    </div>
+                    <div class="proj-foot">
+                        <a href="demos/invoice-extractor-demo.html"><button class="btn btn-blue">⚡ Live Demo</button></a>
+                        <button class="btn btn-s" onclick="copyP('ai-invoice-extractor.workflow.ts')">📋 path</button>
+                        <span class="tag">Mistral · Sheets</span>
+                    </div>
+                </div>
+
+                <div class="proj">
+                    <div class="proj-head">
+                        <span class="icon">💬</span>
+                        <h3>WhatsApp Lead CRM</h3>
+                    </div>
+                    <div class="proj-body">
+                        <span class="result-chip">Parses native Meta payloads · phone-keyed CRM upsert</span>
+                        <p>Leads scored 1–10 with buying signals. Repeat contacts update their row — no duplicates. Spams filtered.</p>
+                    </div>
+                    <div class="proj-foot">
+                        <a href="demos/whatsapp-crm-demo.html"><button class="btn btn-blue">⚡ Live Demo</button></a>
+                        <button class="btn btn-s" onclick="copyP('whatsapp-lead-crm.workflow.ts')">📋 path</button>
+                        <span class="tag">WhatsApp · CRM · AI</span>
+                    </div>
+                </div>
+
+                <div class="proj">
+                    <div class="proj-head">
+                        <span class="icon">📧</span>
+                        <h3>Email Triage &amp; Sentiment Agent</h3>
+                    </div>
+                    <div class="proj-body">
+                        <span class="result-chip">Legal threat → severity critical, sentiment −0.9</span>
+                        <p>Urgency + sentiment (−1…+1) auto-tagging with SLA escalation and de-escalation draft replies.</p>
+                    </div>
+                    <div class="proj-foot">
+                        <a href="demos/triage-agent-demo.html"><button class="btn btn-blue">⚡ Live Demo</button></a>
+                        <button class="btn btn-s" onclick="copyP('email-triage-sentiment-agent.workflow.ts')">📋 path</button>
+                        <span class="tag">Sentiment · Spam · SLA</span>
+                    </div>
+                </div>
+
+                <div class="proj">
+                    <div class="proj-head">
+                        <span class="icon">⚖️</span>
+                        <h3>Insurance Claim Intake Bot</h3>
+                    </div>
+                    <div class="proj-body">
+                        <span class="result-chip">Fraud score 5 → Special Investigation Unit</span>
+                        <p>AI extracts facts; code rules engine applies coverage matrix + 4-tier routing. Audit-friendly.</p>
+                    </div>
+                    <div class="proj-foot">
+                        <a href="demos/insurance-claim-bot-demo.html"><button class="btn btn-blue">⚡ Live Demo</button></a>
+                        <button class="btn btn-s" onclick="copyP('insurance-claim-intake-bot.workflow.ts')">📋 path</button>
+                        <span class="tag">Underwriting · Fraud · Rules</span>
+                    </div>
+                </div>
+
+                <div class="proj">
+                    <div class="proj-head">
+                        <span class="icon">📊</span>
+                        <h3>Live Ops Dashboard</h3>
+                    </div>
+                    <div class="proj-body">
+                        <span class="result-chip">GET API aggregates KPIs from all pipelines</span>
+                        <p>Serves validity & escalation & auto-settle rates; auto-refreshes every 15s with source health checks.</p>
+                    </div>
+                    <div class="proj-foot">
+                        <a href="demos/ops-dashboard-demo.html"><button class="btn btn-blue">⚡ Live Demo</button></a>
+                        <button class="btn btn-s" onclick="copyP('live-ops-dashboard.workflow.ts')">📋 path</button>
+                        <span class="tag">API · Dashboard · Metrics</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section id="architecture">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2>Shared <span class="grad">Architecture</span></h2>
+                <p>All pipelines: the AI extracts, deterministic code decides — every approval/payout is auditable.</p>
+            </div>
+            <div class="arch">
+                <span class="c"># intake (webhook)</span>
+                <span class="c">├─ WhatsApp Hook  ├─ Invoice Hook  ├─ Triage Hook  ├─ Claim Hook  └─ Dashboard GET</span>
+                <span class="c">│</span>
+                <span class="a">▼</span> <span class="a">AI Agent (Mistral, strict JSON, temp 0.1-0.3)</span>
+                <span class="c">│</span>
+                <span class="g">▼</span> <span class="g">deterministic rules engine (code nodes)</span>
+                <span class="g">│  • finance validation   • SLA routing   • coverage + fraud matrix   • phone-keyed CRM</span>
+                <span class="c">│</span>
+                <span class="c">├─ Google Sheets (audit / CRM / outbox)  •  onError: continue (never breaks core)</span>
+                <span class="c">├─ Mattermost (alerts & amplations)</span>
+                <span class="c">├─ auto-reply / outbox (queued)</span>
+                <span class="c">└─ JSON response → demo UI</span>
+                <span class="c">│</span>
+                <span class="p">▼</span> <span class="p">Live Dashboard (GET /dashboard-stats, 15s refresh)</span>
+            </div>
+        </div>
+    </section>
+
+    <section id="contact">
+        <div class="wrap">
+            <div class="sec-head">
+                <h2>Let's <span class="grad">Connect</span></h2>
+                <p>Open to AI automation, sales operations & digital growth roles in Doha (transferable QID) or remote.</p>
+            </div>
+            <div class="contact-grid">
+                <div class="c-card">
+                    <div class="icon">📧</div>
+                    <div class="label">Email</div>
+                    <a href="mailto:haxanakhtarqtr@gmail.com">haxanakhtarqtr@gmail.com</a>
+                </div>
+                <div class="c-card">
+                    <div class="icon">📱</div>
+                    <div class="label">Phone</div>
+                    <a href="tel:+97477137228">+974 7713 7228</a>
+                </div>
+                <div class="c-card">
+                    <div class="icon">💼</div>
+                    <div class="label">LinkedIn</div>
+                    <a href="https://linkedin.com/in/hasanakhtar" target="_blank">linkedin.com/in/hasanakhtar</a>
+                </div>
+                <div class="c-card">
+                    <div class="icon">🐙</div>
+                    <div class="label">GitHub</div>
+                    <a href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio" target="_blank">haxanakhtarqtr/n8n-ai-portfolio</a>
+                </div>
+                <div class="c-card">
+                    <div class="icon">📍</div>
+                    <div class="label">Location</div>
+                    <div>Doha, Qatar</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer>© 2025 Hasan Akhtar — AI &amp; Digital Growth Specialist. 5 production-tested pipelines · Built with <span>n8n + Mistral AI + Vanilla JS</span></footer>
+    <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()">🌙</div>
+    <div class="back-top" id="backTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</div>
+
+    <script
+        // Dark/Light mode toggle
+        const toggleTheme = () => {
+            const isDark = document.body.classList.toggle('dark-mode');
+            localStorage.setItem('theme', isDark ? 'dark' : 'light');
+        };
+
+        // Initialize theme
+        const initTheme = () => {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'dark' || (!savedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.body.classList.add('dark-mode');
+            }
+        };
+
+        // Smooth scrolling for navigation
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                if (targetId === '#') return;
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    targetElement.scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                    // Update active nav link
+                    document.querySelectorAll('.nav-links a').forEach(link => {
+                        link.classList.toggle('active', link.getAttribute('href') === targetId);
+                    });
+                }
+            });
+        });
+
+        // Scroll animations
+        const animateOnScroll = () => {
+            const elements = document.querySelectorAll('.animate-on-scroll');
+            elements.forEach(element => {
+                const elementTop = element.getBoundingClientRect().top;
+                const elementBottom = element.getBoundingClientRect().bottom;
+                if (elementTop < window.innerHeight && elementBottom > 0) {
+                    element.classList.add('animate');
+                }
+            });
+        };
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            initTheme();
+            animateOnScroll();
+            window.addEventListener('scroll', () => {
+                animateOnScroll();
+                document.getElementById('backTop').classList.toggle('show', window.scrollY > 500);
+            });
+        });
+
+        // Copy to clipboard function
+        function copyP(n) {
+            navigator.clipboard.writeText('workflows/' + n);
+        }
+    </script>
+</body>
+</html>

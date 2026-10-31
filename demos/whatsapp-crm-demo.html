@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WhatsApp Lead CRM — Live Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 24px; }
+  header h1 { font-size: 1.8rem; color: #25d366; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 20px; }
+  @media (max-width: 880px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 0; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card-body { padding: 16px; }
+  .wa-header {
+    background: #075e54; padding: 14px 18px; display: flex; align-items: center; gap: 12px;
+  }
+  .wa-avatar {
+    width: 40px; height: 40px; border-radius: 50%; background: #128c7e;
+    display: flex; align-items: center; justify-content: center; font-size: 1.2rem;
+  }
+  .wa-header .name { font-weight: 700; color: #fff; font-size: 0.95rem; }
+  .wa-header .status { color: #a7f3d0; font-size: 0.72rem; }
+  .chat-window {
+    background: #0b141a; height: 340px; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 10px;
+    background-image: radial-gradient(circle at 20% 30%, rgba(37,211,102,0.04) 0%, transparent 40%);
+  }
+  .bubble {
+    max-width: 78%; padding: 9px 12px; border-radius: 12px; font-size: 0.84rem;
+    line-height: 1.45; position: relative; word-wrap: break-word;
+  }
+  .bubble.in {
+    background: #1f2c33; color: #e9edef; align-self: flex-start;
+    border-top-left-radius: 2px;
+  }
+  .bubble.out {
+    background: #005c4b; color: #e9edef; align-self: flex-end;
+    border-top-right-radius: 2px;
+  }
+  .bubble .who { font-size: 0.68rem; color: #25d366; font-weight: 700; margin-bottom: 2px; }
+  .bubble .meta { font-size: 0.64rem; color: rgba(233,237,239,0.5); text-align: right; margin-top: 3px; }
+  .bubble .tagline { font-size: 0.66rem; margin-top: 4px; color: #9de1c4; }
+  .wa-input-row { background: #1f2c33; padding: 10px; display: flex; gap: 8px; }
+  .wa-input-row input {
+    flex-grow: 1; background: #2a3942; border: 1px solid #374a53; color: #e9edef;
+    border-radius: 20px; padding: 9px 14px; font-size: 0.84rem;
+  }
+  .wa-input-row input:focus { outline: none; border-color: #25d366; }
+  .btn-send {
+    background: #25d366; color: #06281a; border: none; border-radius: 50%;
+    width: 40px; height: 40px; cursor: pointer; font-size: 1rem; font-weight: 800;
+  }
+  .btn-send:disabled { background: #475569; color: #94a3b8; }
+  .setup-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  label { display: block; font-size: 0.74rem; color: #94a3b8; margin: 8px 0 4px; }
+  .setup-row input {
+    width: 100%; background: #0f172a; color: #cbd5e1; border: 1px solid #334155;
+    border-radius: 8px; padding: 8px 10px; font-size: 0.82rem;
+  }
+  .btn-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 10px; }
+  button.sample { background: #334155; color: #cbd5e1; border: none; border-radius: 8px; padding: 7px 10px; font-size: 0.72rem; cursor: pointer; }
+  button.sample:hover { background: #475569; }
+  .card-body h2 { font-size: 1rem; color: #f1f5f9; margin-bottom: 10px; }
+  .stage-banner {
+    padding: 12px 16px; border-radius: 8px; margin-bottom: 12px; font-weight: 700;
+    font-size: 0.95rem; text-align: center; display: none;
+  }
+  .s-QUALIFIED { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .s-NURTURE { background: #082f49; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .s-NEW { background: #334155; border: 1px solid #64748b; color: #cbd5e1; display: block; }
+  .s-SPAM { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .s-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .score-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 10px; }
+  .score-row { display: flex; justify-content: space-between; font-size: 0.78rem; margin-bottom: 6px; }
+  .score-row .k { color: #94a3b8; }
+  .score-row .v { color: #e2e8f0; font-weight: 600; text-align: right; }
+  .meter { height: 8px; background: #334155; border-radius: 4px; overflow: hidden; margin-top: 6px; }
+  .meter-fill { height: 100%; border-radius: 4px; background: #25d366; }
+  .sig { display: inline-block; background: #0f172a; border: 1px solid #14532d; color: #86efac;
+    padding: 3px 10px; border-radius: 12px; font-size: 0.72rem; margin: 2px; }
+  section.result-block { margin-bottom: 10px; }
+  section.result-block h3 { font-size: 0.74rem; color: #94a3b8; margin-bottom: 5px; text-transform: uppercase; }
+  .placeholder { color: #64748b; text-align: center; padding: 40px 16px; font-size: 0.85rem; }
+  .meta { color: #64748b; font-size: 0.73rem; margin-top: 8px; text-align: right; }
+  footer { text-align: center; margin-top: 24px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #25d366; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>💬 WhatsApp Lead CRM</h1>
+    <p>Native Meta webhook compatible · AI lead intelligence · phone-number-keyed CRM upsert · outbox auto-replies · n8n + Mistral AI</p>
+    <div class="badges">
+      <span class="badge">Meta Payload Parser</span>
+      <span class="badge">Lead Scoring</span>
+      <span class="badge">CRM Upsert by Phone</span>
+      <span class="badge">Outbox Reply Queue</span>
+      <span class="badge">SPAM Filter</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <div class="wa-header">
+        <div class="wa-avatar">💬</div>
+        <div>
+          <div class="name" id="chatTitle">WhatsApp Business</div>
+          <div class="status">online · AI CRM connected</div>
+        </div>
+      </div>
+      <div class="chat-window" id="chatWindow">
+        <div class="bubble in"><div class="who">System</div>Send a message or load a sample — every message runs through the real n8n pipeline: parse → AI lead intel → CRM upsert → outbox reply.</div>
+      </div>
+      <div style="padding:10px 12px 0 12px;">
+        <div class="setup-row">
+          <div><label>Phone (wa.me)</label><input id="from" type="text" value="97455552211"></div>
+          <div><label>Contact Name</label><input id="cname" type="text" value="Fatima Al-Kuwari"></div>
+        </div>
+        <div class="btn-row">
+          <button class="sample" onclick="loadSample('hot')">🔥 Hot Lead</button>
+          <button class="sample" onclick="loadSample('followup')">🔁 Follow-up</button>
+          <button class="sample" onclick="loadSample('spam')">🗑️ Spam</button>
+        </div>
+      </div>
+      <div class="wa-input-row">
+        <input id="message" type="text" placeholder="Type a WhatsApp message..." onkeydown="if(event.key==='Enter')send()">
+        <button class="btn-send" id="sendBtn" onclick="send()">➤</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <h2>🤖 Lead Intelligence &amp; CRM</h2>
+        <div id="stageBanner" class="stage-banner"></div>
+        <div id="resultArea"><div class="placeholder">Send a message to see the lead profile, score and CRM action</div></div>
+        <div class="meta" id="metaInfo"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo</footer>
+</div>
+
+<script>
+const WEBHOOK_URL = 'http://localhost:5678/webhook/whatsapp-crm';
+
+const SAMPLES = {
+  hot: { from: '97455552211', name: 'Fatima Al-Kuwari',
+    message: 'Assalam o alaikum! I need a price for 25 office desks and chairs for my company in West Bay. Budget around 18,000 riyal, needed by end of next month inshaAllah. Can you send quotation?' },
+  followup: { from: '97455552211', name: 'Fatima Al-Kuwari',
+    message: 'Yes please, and also add 2 filing cabinets to the quotation. When can you deliver?' },
+  spam: { from: '923009988777', name: 'Crypto Signals Pro',
+    message: 'Sir invest in our crypto bot, 500% profit guaranteed monthly! Join our VIP signals group now, limited seats!' }
+};
+
+function loadSample(type) {
+  const s = SAMPLES[type];
+  document.getElementById('from').value = s.from;
+  document.getElementById('cname').value = s.name;
+  document.getElementById('message').value = s.message;
+  document.getElementById('chatTitle').textContent = s.name + ' · wa.me/' + s.from;
+}
+
+function addBubble(direction, text, who, tagline) {
+  const win = document.getElementById('chatWindow');
+  const b = document.createElement('div');
+  b.className = 'bubble ' + direction;
+  const now = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  let html = '';
+  if (who) html += '<div class="who">' + who + '</div>';
+  html += text.replace(/</g, '&lt;').replace(/\n/g, '<br>');
+  if (tagline) html += '<div class="tagline">⚡ ' + tagline + '</div>';
+  html += '<div class="meta">' + now + (direction === 'out' ? ' ✓✓' : '') + '</div>';
+  b.innerHTML = html;
+  win.appendChild(b);
+  win.scrollTop = win.scrollHeight;
+}
+
+function esc(s) { return String(s == null ? '' : s); }
+
+async function send() {
+  const from = document.getElementById('from').value.trim();
+  const name = document.getElementById('cname').value.trim();
+  const message = document.getElementById('message').value.trim();
+  const btn = document.getElementById('sendBtn');
+  const banner = document.getElementById('stageBanner');
+  const resultArea = document.getElementById('resultArea');
+
+  if (!from || !message) { alert('Phone number and message required.'); return; }
+  document.getElementById('chatTitle').textContent = name + ' · wa.me/' + from;
+  addBubble('in', message, name || from);
+  document.getElementById('message').value = '';
+
+  btn.disabled = true;
+  banner.className = 'stage-banner s-loading';
+  banner.textContent = '🤖 AI analyzing lead + CRM upsert...';
+  resultArea.innerHTML = '<div class="placeholder">Waiting for n8n pipeline...</div>';
+  const startTime = performance.now();
+
+  try {
+    const res = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from, name, message })
+    });
+    const data = await res.json();
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+
+    const stageText = {
+      QUALIFIED: '🔥 QUALIFIED LEAD — score ' + data.lead_score + '/10 · reply queued',
+      NURTURE: '🌱 NURTURE — score ' + data.lead_score + '/10 · follow-up reply queued',
+      NEW: '🆕 NEW CONTACT — score ' + data.lead_score + '/10',
+      SPAM: '🗑️ SPAM — filtered, no reply sent'
+    };
+    banner.className = 'stage-banner s-' + data.stage;
+    banner.textContent = stageText[data.stage] || data.stage;
+
+    if (data.whatsapp_reply) {
+      addBubble('out', data.whatsapp_reply, 'AI Auto-Reply (outbox)', 'score ' + data.lead_score + '/10 · ' + data.stage.toLowerCase());
+    } else {
+      addBubble('out', '🚫 No auto-reply for SPAM — contact logged as filtered.', 'CRM Filter');
+    }
+
+    const l = data.lead || {};
+    const scorePct = (data.lead_score || 0) * 10;
+    let html = '<div class="score-box">' +
+      '<div class="score-row"><span class="k">Lead ID (dedupe key)</span><span class="v">' + esc(l.lead_id) + '</span></div>' +
+      '<div class="score-row"><span class="k">CRM action</span><span class="v" style="color:#25d366">' + esc(data.crm_action) + '</span></div>' +
+      '<div class="score-row"><span class="k">Lead score</span><span class="v">' + data.lead_score + '/10</span></div>' +
+      '<div class="meter"><div class="meter-fill" style="width:' + scorePct + '%"></div></div>' +
+      '</div>';
+
+    html += '<section class="result-block"><h3>Extracted Intelligence</h3><div class="score-box">' +
+      '<div class="score-row"><span class="k">Intent</span><span class="v">' + esc(l.intent).replace(/_/g, ' ') + '</span></div>' +
+      '<div class="score-row"><span class="k">Interest</span><span class="v">' + esc(l.interest_summary) + '</span></div>' +
+      '<div class="score-row"><span class="k">Company guess</span><span class="v">' + esc(l.company_guess || '—') + '</span></div>' +
+      '</div></section>';
+
+    const sigs = [];
+    if (l.budget_signal) sigs.push('💰 ' + esc(l.budget_signal));
+    if (l.timeline_signal) sigs.push('📅 ' + esc(l.timeline_signal));
+    if (l.quantity_signal) sigs.push('📦 ' + esc(l.quantity_signal));
+    if (sigs.length) {
+      html += '<section class="result-block"><h3>Buying Signals</h3>' + sigs.map(s => '<span class="sig">' + s + '</span>').join('') + '</section>';
+    }
+    html += '<section class="result-block"><h3>Pipeline</h3><div class="score-box">' +
+      '<div class="score-row"><span class="k">Stage</span><span class="v">' + esc(data.stage) + '</span></div>' +
+      '<div class="score-row"><span class="k">Outbox</span><span class="v">' + (data.reply_queued ? '✅ reply queued' : '—') + '</span></div>' +
+      '</div></section>';
+
+    resultArea.innerHTML = html;
+    document.getElementById('metaInfo').textContent = '⏱ ' + elapsed + 's · ' + new Date().toLocaleTimeString();
+  } catch (err) {
+    banner.className = 'stage-banner s-SPAM';
+    banner.textContent = '❌ ERROR — n8n unreachable (localhost:5678)';
+    resultArea.innerHTML = '<div class="placeholder">' + err.message + '</div>';
+  } finally {
+    btn.disabled = false;
+  }
+}
+</script>
+</body>
+</html>
