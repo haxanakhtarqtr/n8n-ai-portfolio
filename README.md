@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Five production-tested AI automation pipelines built with n8n-as-code and Mistral AI — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, and AI-assisted insurance underwriting.
+> Six production-tested AI automation pipelines built with n8n-as-code and Mistral AI — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, and AI-assisted insurance underwriting.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -15,6 +15,7 @@
 | 3 | **[Email Triage & Sentiment Agent](#3-email-triage--sentiment-agent)** | Auto-tags urgency, sentiment & spam on inbound messages; escalates angry customers with SLA | Legal-threat email → `URGENT / angry (-0.9)` → 15-min SLA alert + calm draft reply |
 | 4 | **[Live Ops Dashboard API](#4-live-ops-dashboard)** | Aggregates KPIs from all pipelines into a real-time dashboard with health monitoring | Serves live validity/escalation/auto-settle rates via GET API |
 | 5 | **[Insurance Claim Intake Bot](#5-insurance-claim-intake-bot)** | AI claim extraction + deterministic underwriting rules: coverage matrix, fraud scoring, 4-tier routing | 3 scenarios: auto-settle ✅ · coverage mismatch caught ✅ · fraud score 5 → SIU ✅ |
+| 6 | **[Restaurant AI Receptionist](#6-restaurant-ai-receptionist)** | Two-workflow chat system: AI receptionist with memory + kitchen API that validates items, prices with VAT 5% and emails invoices | Off-menu item refused with suggestions ✅ · 77.70 QAR order confirmed, invoice emailed ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -80,6 +81,19 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 - Clean QAR 1,450 motor claim → **auto-settle**, 24h SLA
 - Fire claim on motor policy → `COVERAGE_MISMATCH` → underwriter
 - 75-day-late claim, no police report, no photos, pressure tactics, serial claimant → **fraud score 5 → SIU**
+
+---
+
+### 6. Restaurant AI Receptionist
+
+**Problem:** Restaurant customers message at all hours; order details, pricing and replies depend on someone being at the counter.
+
+**Solution:** Two workflows in conversation. The receptionist agent (Mistral, per-customer memory) takes orders in chat; a kitchen API validates every item against a code-defined menu, prices with 5% VAT, generates the invoice email and refuses anything off the menu with suggestions.
+
+**Live test evidence:**
+- 2 Chicken Mandi + Fattoush Salad: confirmed at **77.70 QAR**, invoice emailed (order ORD-MVXD69WD)
+- Pepperoni pizza (not on the menu): refused, closest items suggested
+- "3 pepsi": mapped to Soft Drinks, quantity confirmed before submission
 
 ---
 
