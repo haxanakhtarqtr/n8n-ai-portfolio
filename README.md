@@ -129,12 +129,16 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ## 🛠 Tech Stack
 
-n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent nodes · Google Sheets API · Mattermost webhooks · Meta WhatsApp webhook format · Vanilla HTML/CSS/JS demo UIs
+n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
 
 ## 🚀 How To Run
 
-1. **n8n**: import any `workflows/*.workflow.ts` via [n8nac](https://www.npmjs.com/package/n8nac) (`npx n8nac push <file> --verify`), add a Mistral API credential, activate.
-2. **Endpoints** (after activation):
+**Try it live, no setup:** open the [portfolio site](https://haxanakhtarqtr.github.io/n8n-ai-portfolio/) — every demo runs against the public tunnel (`chat.hasanakhtar.co.uk`), so anyone can test the pipelines from anywhere.
+
+**Self-host:**
+
+1. Import any `workflows/*.workflow.ts` via [n8nac](https://www.npmjs.com/package/n8nac) (`npx n8nac push <file> --verify`), add Mistral + Gmail + Google Sheets credentials, activate.
+2. Endpoints (after activation):
 
 | Endpoint | Method | Purpose |
 |----------|--------|---------|
@@ -142,16 +146,18 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent
 | `/webhook/whatsapp-crm` | POST Meta payload or `{ from, name, message }` | Lead intelligence + CRM upsert |
 | `/webhook/triage-message` | POST `{ sender, subject, message }` | Urgency/sentiment/spam triage |
 | `/webhook/insurance-claim` | POST claim fields | Underwriting decision engine |
+| `/webhook/restaurant-order` | POST `{ items, customer_email }` | Menu validation, VAT pricing, invoice email |
+| `/webhook/resto-chat-trigger-01/chat` | POST `{ chatInput }` | AI receptionist conversation |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
-3. **Demos**: open any file in `demos/` in a browser (n8n must be running on `localhost:5678`).
+3. Demos: open any file in `demos/` in a browser. They default to the public tunnel; for a local instance, change the base URL constant at the top of each demo's JS back to `localhost:5678`.
 
 ## 📋 Skills Coverage (CV Claims → Working Proof)
 
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 5 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 6 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -159,7 +165,9 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent
 | Predictive Lead Scoring | WhatsApp CRM (1–10 with buying signals) |
 | Quotation Generation (5/5) | Invoice validation + claim reserve bands |
 | Insurance Claims & Underwriting | Claim Intake Bot (coverage matrix, fraud scoring) |
-| Real-time dashboards | Ops Dashboard (15s refresh, health monitoring) |
+| Real-time dashboards | Ops Dashboard (auto-refresh, health monitoring) |
+| Conversational AI Agents (24/7 chat) | Restaurant AI Receptionist (chat intake + memory + order tool) |
+| Automated Invoicing & Email | Restaurant Order API (HTML invoice via Gmail) |
 | Process Optimization (5/5) | Auto-settle tiering, outbox pattern, graceful degradation |
 
 ---
