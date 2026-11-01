@@ -141,7 +141,7 @@
 </div>
 
 <script>
-const STATS_URL = 'http://localhost:5678/webhook/dashboard-stats';
+const STATS_URL = 'https://chat.hasanakhtar.co.uk/webhook/dashboard-stats';
 let autoTimer = null;
 
 function esc(s) { return String(s == null ? '' : s); }
@@ -273,13 +273,13 @@ function toggleAuto() {
     btn.className = 'btn-auto'; btn.textContent = '⏸ Auto-off';
   } else {
     refresh();
-    autoTimer = setInterval(refresh, 60000);
-    btn.className = 'btn-auto on'; btn.textContent = '▶ Auto 60s';
+    autoTimer = setInterval(refresh, 120000);
+    btn.className = 'btn-auto on'; btn.textContent = '▶ Auto 120s';
   }
 }
 
 refresh();
-autoTimer = setInterval(refresh, 60000);
+autoTimer = setInterval(refresh, 120000);
 </script>
 </body>
 </html>
