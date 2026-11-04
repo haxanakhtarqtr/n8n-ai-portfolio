@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Carousel Slides</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Segoe UI', Tahoma, Arial, sans-serif; background: #f6f7f9; }
+  .slide {
+    width: 100vw; height: 100vh; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center;
+    padding: 70px 90px; position: relative;
+    background: #f6f7f9; color: #1f2328;
+    border-bottom: 1px solid #d0d7de;
+  }
+  .slide .kicker {
+    font-size: 14px; font-weight: 600; color: #57606a;
+    text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 18px;
+  }
+  .slide h1 { font-size: 52px; font-weight: 700; letter-spacing: -1px; line-height: 1.15; margin-bottom: 20px; }
+  .slide h2 { font-size: 40px; font-weight: 700; letter-spacing: -0.5px; line-height: 1.2; margin-bottom: 16px; }
+  .slide .sub { font-size: 21px; color: #57606a; line-height: 1.55; max-width: 900px; }
+  .slide .result {
+    display: inline-block; margin-top: 26px; padding: 10px 22px; border-radius: 999px;
+    font-size: 18px; font-weight: 600; width: fit-content;
+  }
+  .res-green { background: #dafbe1; color: #1a7f37; border: 1px solid #aceebb; }
+  .res-blue { background: #ddf4ff; color: #0969da; border: 1px solid #a5d8f5; }
+  .res-red { background: #ffebe9; color: #cf222e; border: 1px solid #ff8182; }
+  .res-amber { background: #fff8c5; color: #9a6700; border: 1px solid #eac54f; }
+  .slide .num {
+    position: absolute; top: 40px; right: 60px;
+    font-size: 15px; font-weight: 600; color: #8b949e;
+  }
+  .slide .foot {
+    position: absolute; bottom: 36px; left: 90px;
+    font-size: 14px; color: #6a737d;
+  }
+  .slide .foot b { color: #1f2328; }
+  .stats { display: flex; gap: 14px; margin-top: 28px; }
+  .stat {
+    background: #fff; border: 1px solid #d0d7de; border-radius: 8px;
+    padding: 16px 22px; font-size: 16px;
+  }
+  .stat b { display: block; font-size: 22px; margin-bottom: 2px; }
+  .stat span { color: #57606a; font-size: 13px; }
+  ul.points { list-style: none; margin-top: 8px; }
+  ul.points li { font-size: 20px; color: #24292f; padding: 7px 0 7px 30px; position: relative; }
+  ul.points li::before { content: "—"; position: absolute; left: 0; color: #0969da; font-weight: 700; }
+  .cta {
+    margin-top: 30px; display: inline-block; background: #0969da; color: #fff;
+    font-size: 18px; font-weight: 600; padding: 12px 26px; border-radius: 8px;
+  }
+</style>
+</head>
+<body>
+
+<div class="slide" id="s1">
+  <div class="num">1 / 6</div>
+  <div class="kicker">Hasan Akhtar — AI &amp; Digital Growth Specialist · Doha, Qatar</div>
+  <h1>6 AI automations that run my work.</h1>
+  <p class="sub">Built in n8n, powered by Mistral AI. Every pipeline follows one rule: <b>the AI extracts, deterministic code decides.</b> All six are deployed, tested and live — this deck shows what each one does and what happened when I tried to break it.</p>
+  <div class="stats">
+    <div class="stat"><b>6</b><span>workflows live</span></div>
+    <div class="stat"><b>15+ yrs</b><span>finance &amp; insurance</span></div>
+    <div class="stat"><b>100%</b><span>test-pass rate</span></div>
+  </div>
+  <div class="foot">Swipe — one pipeline per slide <b>·</b> live demos at the link in the featured section</div>
+</div>
+
+<div class="slide" id="s2">
+  <div class="num">2 / 6</div>
+  <div class="kicker">Pipeline 01 — Invoice Extractor</div>
+  <h2>It reads invoices. It checks the math. It refuses to pay mistakes.</h2>
+  <p class="sub">Paste raw invoice text: 15+ fields extracted — vendor, tax ID, dates, line items — then finance-grade validation: subtotal + tax vs stated total, line-item sums, date logic.</p>
+  <div class="result res-green">Planted test: caught a 325 QAR overcharge instantly — payment held</div>
+  <div class="foot"><b>Invoice Extractor</b> · Mistral + validation engine · logged to Google Sheets</div>
+</div>
+
+<div class="slide" id="s3">
+  <div class="num">3 / 6</div>
+  <div class="kicker">Pipeline 02 — WhatsApp Lead CRM</div>
+  <h2>Leads message at midnight. The CRM answers before morning.</h2>
+  <p class="sub">Inbound WhatsApp messages scored 1-10 with budget, timeline and quantity signals. Contacts upsert by phone number — repeat conversations update one row. Spam never enters the pipeline.</p>
+  <div class="result res-blue">Hot lead scored 9/10, reply drafted · same number never duplicates</div>
+  <div class="foot"><b>WhatsApp Lead CRM</b> · native Meta webhook format · Google Sheets CRM</div>
+</div>
+
+<div class="slide" id="s4">
+  <div class="num">4 / 6</div>
+  <div class="kicker">Pipeline 03 — Email Triage &amp; Sentiment</div>
+  <h2>Angry customers stop waiting in the newsletter queue.</h2>
+  <p class="sub">Every inbound message classified by urgency, sentiment (-1 to +1) and spam probability. Critical ones hit the team channel in seconds with a pre-drafted reply and a 15-minute SLA target.</p>
+  <div class="result res-red">Legal-threat email: urgent, sentiment -0.9, escalated in 5.2 seconds</div>
+  <div class="foot"><b>Email Triage Agent</b> · sentiment scoring · Mattermost escalation</div>
+</div>
+
+<div class="slide" id="s5">
+  <div class="num">5 / 6</div>
+  <div class="kicker">Pipeline 04-05 — Insurance Claims &amp; Live Dashboard</div>
+  <h2>Fifteen years of underwriting, encoded as rules.</h2>
+  <p class="sub">Claims: AI extracts facts, a coverage matrix and fraud scoring route each claim across four tiers — from instant auto-settle under QAR 2,000 to the investigation unit. Dashboard: live KPIs from every pipeline, with per-source health reporting.</p>
+  <div class="result res-amber">Fraud score 5 routed to investigation · coverage mismatch caught pre-review</div>
+  <div class="foot"><b>Claim Intake Bot + Ops Dashboard</b> · coverage matrix · auto-settle tiering</div>
+</div>
+
+<div class="slide" id="s6">
+  <div class="num">6 / 6</div>
+  <div class="kicker">Pipeline 06 — Restaurant AI Receptionist</div>
+  <h2>An afternoon to build, because the pattern already existed.</h2>
+  <p class="sub">Two workflows in conversation: an AI receptionist takes orders in chat, a kitchen API validates every item against the menu, prices with 5% VAT and emails the invoice. Off-menu items are refused with suggestions — the AI never prices an order.</p>
+  <div class="result res-green">Live test: 77.70 QAR order confirmed, invoice emailed · off-menu item refused</div>
+  <div class="cta">Try the live demos — link in the featured section</div>
+  <div class="foot"><b>Hasan Akhtar</b> · haxanakhtarqtr@gmail.com · +974 7713 7228 · Doha, Qatar</div>
+</div>
+
+</body>
+</html>
