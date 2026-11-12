@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Daily AI Briefing — Morning Agent Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 900px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #60a5fa; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3); margin-bottom: 20px;
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  button.trigger {
+    width: 100%; padding: 12px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.95rem; font-weight: 700; background: #2563eb; color: white; transition: all 0.2s;
+  }
+  button.trigger:hover { background: #1d4ed8; transform: translateY(-1px); }
+  button.trigger:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .status {
+    padding: 12px 16px; border-radius: 8px; margin: 14px 0; font-weight: 700;
+    display: none; font-size: 0.9rem; text-align: center;
+  }
+  .s-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .s-ok { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .s-error { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 14px; }
+  @media (max-width: 640px) { .kpi-grid { grid-template-columns: 1fr 1fr; } }
+  .kpi { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px; text-align: center; }
+  .kpi .val { font-size: 1.15rem; font-weight: 700; color: #f1f5f9; }
+  .kpi .lbl { font-size: 0.64rem; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 3px; }
+  .weather { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 16px; font-size: 0.88rem; color: #cbd5e1; margin-bottom: 14px; }
+  .commentary { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 14px 18px; }
+  .commentary h3 { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .commentary ul { list-style: none; }
+  .commentary li { padding: 6px 0; font-size: 0.9rem; color: #e2e8f0; border-bottom: 1px solid #1e293b; }
+  .commentary li:last-child { border-bottom: none; }
+  .commentary li::before { content: "🤖 "; }
+  .facts { font-size: 0.78rem; color: #94a3b8; line-height: 1.7; }
+  .facts b { color: #cbd5e1; }
+  .source-chip { display: inline-block; padding: 3px 10px; border-radius: 14px; font-size: 0.7rem; margin: 2px; border: 1px solid #22c55e; color: #86efac; background: rgba(34,197,94,0.08); }
+  .source-chip.bad { border-color: #ef4444; color: #fca5a5; background: rgba(239,68,68,0.08); }
+  .engine { margin-top: 14px; color: #64748b; font-size: 0.74rem; line-height: 1.6; }
+  .engine code { color: #94a3b8; }
+  .note { margin-top: 14px; font-size: 0.72rem; color: #475569; line-height: 1.5; }
+  .note code { color: #64748b; }
+  .placeholder { color: #64748b; text-align: center; padding: 40px 20px; font-size: 0.9rem; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>☀️ Daily AI Briefing — Morning Agent</h1>
+    <p>Every morning at 07:00 (Asia/Qatar) the agent reads its own pipeline logs, checks the Doha weather, computes every KPI in deterministic code, and lets the AI only narrate → n8n portfolio demo</p>
+    <div class="badges">
+      <span class="badge">Cron 07:00 Asia/Qatar + manual webhook</span>
+      <span class="badge">Open-Meteo weather — free, no API key</span>
+      <span class="badge">KPIs computed in code from 3 Sheets logs</span>
+      <span class="badge">Groq gpt-oss-120b narrates facts only (temp 0.2)</span>
+      <span class="badge">HTML email via Gmail</span>
+      <span class="badge">Source-health chips — dead sheets never lie</span>
+    </div>
+  </header>
+
+  <div class="card">
+    <h2>🔔 Trigger the briefing now</h2>
+    <button class="trigger" id="goBtn" onclick="triggerBriefing()">Run today's briefing →</button>
+    <div class="status" id="status"></div>
+    <div class="placeholder" id="placeholder">The cron fires daily at 07:00 — this button runs the exact same pipeline on demand.</div>
+
+    <div id="result" style="display:none;">
+      <div class="kpi-grid" id="kpis"></div>
+      <div class="weather" id="weather"></div>
+      <div class="commentary">
+        <h3>AI Commentary <span id="digestChip" style="text-transform:none;"></span></h3>
+        <ul id="lines"></ul>
+      </div>
+      <div class="facts" id="facts" style="margin-top:14px;"></div>
+      <div class="engine" id="engine"></div>
+    </div>
+    <div class="note">Demo posts to the public tunnel <code>WEBHOOK_URL</code>; for a local instance change
+      <code>WEBHOOK_URL</code> in this file's source to <code>http://localhost:5678/webhook/daily-briefing</code>.
+      Each run also sends the real HTML email to the owner's inbox.</div>
+  </div>
+</div>
+
+<footer>Part of the <span>n8n AI Portfolio</span> · Hasan Akhtar · Doha — <a href="../index.html" style="color:#60a5fa;">← back to all projects</a></footer>
+
+<script>
+  // Public tunnel by default. Local override:
+  //   const WEBHOOK_URL = 'http://localhost:5678/webhook/daily-briefing';
+  const WEBHOOK_URL = 'https://chat.hasanakhtar.co.uk/webhook/daily-briefing';
+
+  const $ = id => document.getElementById(id);
+
+  async function triggerBriefing() {
+    const btn = $('goBtn');
+    btn.disabled = true;
+    $('status').className = 'status s-loading';
+    $('status').textContent = '⏳ Reading Sheets logs, checking weather, computing KPIs, drafting commentary…';
+    $('result').style.display = 'none';
+    $('placeholder').style.display = 'none';
+    try {
+      const res = await fetch(WEBHOOK_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      const d = await res.json();
+      if (d.error) throw new Error(typeof d.message === 'string' ? d.message : JSON.stringify(d));
+      render(d);
+    } catch (err) {
+      $('status').className = 'status s-error';
+      $('status').textContent = '❌ ' + err.message;
+    }
+    btn.disabled = false;
+  }
+
+  function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+  function render(d) {
+    $('status').className = 'status s-ok';
+    $('status').textContent = '✅ Briefing generated for ' + esc(d.brief_date) + ' — HTML email sent to the owner\'s inbox' + (d.email_message_id ? ' (id ' + esc(d.email_message_id) + ')' : '');
+
+    const f = d.facts || {};
+    const kpis = [
+      [f.tasks ? f.tasks.due_today.length : 0, 'tasks due today'],
+      [f.tasks ? f.tasks.overdue.length : 0, 'overdue'],
+      [(f.expenses ? f.expenses.this_month_total_qar : 0) + ' QAR', 'month expenses'],
+      [(f.sales ? f.sales.this_month_revenue_qar : 0) + ' QAR', 'month revenue']
+    ];
+    $('kpis').innerHTML = kpis.map(k => '<div class="kpi"><div class="val">' + esc(String(k[0])) + '</div><div class="lbl">' + esc(k[1]) + '</div></div>').join('');
+
+    const w = f.weather || {};
+    $('weather').innerHTML = w.ok
+      ? '🌤️ <b>Doha weather:</b> ' + esc(w.text) + ' · ' + esc(String(w.temp_c)) + '°C now (min ' + esc(String(w.min_c)) + '°C / max ' + esc(String(w.max_c)) + '°C)' + (w.precip_mm ? ' · precip ' + esc(String(w.precip_mm)) + ' mm' : '')
+      : '🌤️ Weather unavailable for this run';
+
+    $('digestChip').textContent = d.digest_engine === 'groq' ? '(Groq, grounded on facts)' : '(code fallback)';
+    $('lines').innerHTML = (d.digest_lines || []).map(l => '<li>' + esc(l) + '</li>').join('');
+
+    const chip = (name, st) => '<span class="source-chip' + (st === 'ok' ? '' : ' bad') + '">' + esc(name) + ': ' + esc(st) + '</span>';
+    const s = d.sources || {};
+    $('facts').innerHTML =
+      '<b>Source health:</b> ' + chip('tasks', s.tasks) + chip('expenses', s.expenses) + chip('orders', s.orders) + chip('weather', s.weather) + '<br>' +
+      '<b>Tasks:</b> ' + esc(String((f.tasks || {}).on_file)) + ' on file · ' + esc(String((f.tasks || {}).due_today ? f.tasks.due_today.length : 0)) + ' due today · ' + esc(String((f.tasks || {}).overdue ? f.tasks.overdue.length : 0)) + ' overdue<br>' +
+      '<b>Expenses:</b> ' + esc(String((f.expenses || {}).this_month_total_qar)) + ' QAR this month across ' + esc(String((f.expenses || {}).this_month_count)) + ' receipt(s) · ' + esc(String((f.expenses || {}).flagged_for_review)) + ' flagged for review<br>' +
+      '<b>Sales:</b> ' + esc(String((f.sales || {}).delivered_orders)) + ' delivered orders → ' + esc(String((f.sales || {}).delivered_revenue_qar)) + ' QAR · this month ' + esc(String((f.sales || {}).this_month_orders)) + ' orders → ' + esc(String((f.sales || {}).this_month_revenue_qar)) + ' QAR' +
+      ((f.sales || {}).top_rep ? ' · top rep ' + esc(f.sales.top_rep.name) + ' (' + esc(String(f.sales.top_rep.revenue_qar)) + ' QAR)' : '');
+
+    $('engine').innerHTML = 'KPIs: <code>deterministic code over Sheets logs (Tasks · Expenses · Sales_Orders)</code> · Weather: <code>Open-Meteo, free, no key</code> · Commentary: <code>Groq gpt-oss-120b temp 0.2, json_object, facts-only contract</code> · Delivery: <code>Gmail HTML</code>';
+    $('result').style.display = 'block';
+  }
+</script>
+</body>
+</html>

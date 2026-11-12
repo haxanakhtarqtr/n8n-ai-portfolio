@@ -145,9 +145,9 @@
 <header class="hero">
   <div class="wrap">
     <h1>AI Automation Specialist — n8n + LLM Engineer</h1>
-    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, a complete recruitment funnel (CV screening → interview scheduling), a RAG knowledge base with local-embedding vector search, a natural-language analytics agent where the AI plans and deterministic code executes, a receipt-vision expense tracker, a voice-note-to-task audio agent, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
+    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, a complete recruitment funnel (CV screening → interview scheduling), a RAG knowledge base with local-embedding vector search, a natural-language analytics agent where the AI plans and deterministic code executes, a receipt-vision expense tracker, a voice-note-to-task audio agent, a daily AI briefing that reads its own KPIs, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
     <div class="pills">
-      <span class="pill green">12 workflows, all tested live</span>
+      <span class="pill green">13 workflows, all tested live</span>
       <span class="pill">15+ years — finance, insurance, sales operations</span>
       <span class="pill">Doha, Qatar — open to GCC and remote roles</span>
     </div>
@@ -178,6 +178,7 @@
       <div class="skill"><span>NL→Data Analytics (NL2SQL-style)</span><span class="rating">4/5</span></div>
       <div class="skill"><span>Vision AI &amp; Multimodal Extraction</span><span class="rating">4/5</span></div>
       <div class="skill"><span>Voice AI &amp; Speech Processing</span><span class="rating">4/5</span></div>
+      <div class="skill"><span>Scheduled Jobs &amp; Reporting</span><span class="rating">4/5</span></div>
     </div>
   </div>
 </section>
@@ -185,7 +186,7 @@
 <section id="projects">
   <div class="wrap">
     <div class="sec-label">Projects</div>
-    <div class="sec-title">Twelve production pipelines</div>
+    <div class="sec-title">Thirteen production pipelines</div>
     <div class="sec-sub">Each pipeline follows the same rule: the AI extracts, deterministic code decides. Payouts, approvals and escalations are always auditable.</div>
     <div class="proj-grid">
 
@@ -332,6 +333,19 @@
         </div>
       </div>
 
+      <div class="proj">
+        <div class="proj-head">
+          <h3>Daily AI Briefing — Morning Agent</h3>
+          <span class="status st-green">Cron 07:00 — KPIs computed in code, narrated by AI</span>
+        </div>
+        <div class="proj-body">Every morning at 07:00 the agent reads its own pipeline logs (Tasks, Expenses, Sales_Orders) and the Doha weather from Open-Meteo, computes every KPI in deterministic code — tasks due/overdue, month spend, flagged receipts, delivered revenue, top rep — and hands only those facts to Groq, which writes the commentary under a facts-only contract before the HTML email goes out. A source-health map means a dead sheet degrades visibly, never as silent zeros; a code fallback digest means the email always sends.</div>
+        <div class="proj-foot">
+          <a class="btn primary" href="demos/daily-briefing-demo.html">Open demo</a>
+          <a class="btn" href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio/blob/main/workflows/Daily%20AI%20Briefing%20-%20Morning%20Agent.workflow.ts">Source</a>
+          <span class="src-path">Cron + webhook · KPI engine in code · facts-only Groq · Gmail</span>
+        </div>
+      </div>
+
       <div class="proj" style="grid-column: 1 / -1;">
         <div class="proj-head">
           <h3>Live Ops Dashboard</h3>
@@ -352,7 +366,7 @@
 <section id="architecture">
   <div class="wrap">
     <div class="sec-label">Architecture</div>
-    <div class="sec-title">One pattern, twelve pipelines</div>
+    <div class="sec-title">One pattern, thirteen pipelines</div>
     <div class="sec-sub">LLMs run at low temperature for deterministic extraction. Every decision that touches money or escalation is plain code — reviewable, testable, auditable.</div>
     <div class="arch"># intake            webhook (WhatsApp / invoice / email / claim / GET) + n8n form (PDF CV upload)
         |

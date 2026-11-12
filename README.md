@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Twelve production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, a **natural-language analytics agent (AI plans, deterministic code executes)**, a **receipt-vision expense tracker (AI extracts, code validates)**, and a **voice-note-to-task audio agent (Whisper transcription, deterministic deadline resolution)**.
+> Thirteen production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, a **natural-language analytics agent (AI plans, deterministic code executes)**, a **receipt-vision expense tracker (AI extracts, code validates)**, a **voice-note-to-task audio agent (Whisper transcription, deterministic deadline resolution)**, and a **daily AI briefing (KPIs computed in code, narrated by AI)**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -22,6 +22,7 @@
 | 10 | **[Ask Your Data — NL Analytics Agent](#10-ask-your-data--nl-analytics-agent)** | Plain-English question over a spreadsheet → Groq query plan (strict JSON) → deterministic whitelist validation → pure-JS execution engine → grounded answer; LLM never sees the raw data | Delivered revenue **113,445 QAR** (21/30 rows) ✅ · France question → deterministic `plan_rejected` ✅ · tunnel 200 OK ✅ |
 | 11 | **[Receipt & Expense Tracker — Vision AI](#11-receipt--expense-tracker--vision-ai)** | Receipt photo → Groq vision extraction (strict JSON) → deterministic finance validation (line items, VAT math, date, duplicate hash) → code-assigned category → Sheets register + monthly Gmail digest | Planted **104 QAR overcharge caught** ✅ · duplicate resubmission skipped ✅ · memo image → `not_a_receipt` ✅ · digest email SENT (1,861.70 QAR) ✅ |
 | 12 | **[Voice Note to Task — Audio AI](#12-voice-note-to-task--audio-ai)** | Voice note (mic or file) → Groq Whisper v3-turbo transcription (multipart binary) → Groq gpt-oss-120b task extraction (strict JSON, words only) → deterministic deadline resolver + priority whitelist + transcript-hash dedupe → Sheets Tasks log | Clean task → tomorrow 2 PM resolved to a real date ✅ · vague "next Monday" → code-parsed date + note ✅ · weather chatter → `off_topic` skip ✅ · replay → `duplicate` blocked ✅ |
+| 13 | **[Daily AI Briefing — Morning Agent](#13-daily-ai-briefing--morning-agent)** | Cron 07:00 (Asia/Qatar) + manual webhook → weather (Open-Meteo, free) + KPIs computed in deterministic code from 3 Sheets logs (Tasks, Expenses, Sales_Orders) → Groq 5-line commentary grounded on facts only → HTML email | All 4 sources `ok` ✅ · delivered revenue **113,445 QAR** matched the analytics agent's verified number ✅ · top rep + flagged receipt surfaced ✅ · tunnel 200 OK ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -258,6 +259,34 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 13. Daily AI Briefing — Morning Agent
+
+**Problem:** A portfolio of pipelines produces logs all day — tasks logged, receipts flagged, orders delivered — but nobody re-opens four spreadsheets every morning to ask "what's pending today?". The numbers exist; the *routine of reading them* doesn't.
+
+**Solution:** A scheduled agent that computes its own morning briefing and emails it:
+- **Triggers:** cron `0 7 * * *` (workflow timezone `Asia/Qatar`) *or* `POST /webhook/daily-briefing` for manual/demo runs — same chain either way
+- **Four parallel feeds:** Tasks + Expenses + Sales_Orders (Google Sheets reads, retry-on-fail, onError-continue) + **Doha weather from Open-Meteo** (completely free, no API key, 1-day forecast)
+- **Compute Briefing (code):** deterministic KPI engine — tasks due today / overdue / due within 7 days / high-priority open, month expense total + flagged receipt count, delivered revenue vs pipeline value, this-month orders + revenue, **top rep by revenue**, and a structured weather summary. It also emits a **source-health map** (`tasks: ok, expenses: ok …`) so a dead sheet can never silently report zeros as facts
+- **Draft Digest (Groq `gpt-oss-120b`, temp 0.2, `response_format: json_object`):** 4–6 commentary lines under a hard contract — *"you MUST NOT invent, round, or estimate any number that is not in the facts"*
+- **Assemble (code):** Gmail-safe HTML email (KPI grid, weather strip, AI commentary, due/overdue lists, engine footer) + a **deterministic fallback digest** if the Groq call ever fails — the briefing always goes out
+- **Delivery:** HTML email via Gmail + the full briefing JSON back to the webhook caller
+
+**Engineering detail:**
+- **The multi-run convergence bug** — the first version fed four branches directly into one Compute code node. Ground truth from the executions database showed the node ran **once per incoming connection** (n8n does *not* merge parallel connections into a node's input), so the digest — and the Gmail send — fired once per branch (4 emails for 1 POST). Fixed with an explicit **Merge node (append, 4 inputs)** as the single convergence point: one Compute run, one Groq call, one email. A textbook example of why "it returned 200" is not the same as "it ran once"
+- **Schema-drift bugs caught by grounding** — the first live run showed `delivered revenue 0` because the computed KPI read `revenue` while the sheet's real column is `total_qar`, and weather read a `data` key that the tagged feed never carries; both surfaced as suspicious zeros/absent weather in the *facts*, exactly what the facts-only contract is designed to expose — fixed by aligning to the real schema
+- **Facts-in, prose-out separation** — Groq never sees raw rows; it receives the computed facts JSON and may only narrate it. The AI cannot inflate revenue, invent overdue tasks, or round numbers
+- **Source-health chips** — every run reports whether each feed actually loaded, so a Sheets quota error or Open-Meteo outage degrades visibly instead of silently
+
+**Live test evidence:**
+- Full run: all 4 sources `ok` ✅ · weather "Clear sky, 25.4°C (min 20.9 / max 27.2)" ✅
+- Sales facts: **21 delivered orders → 113,445 QAR** — matching the Ask Your Data agent's independently verified number ✅ · this month 3 orders → 14,270 QAR · top rep Omar Al-Sayed (60,240 QAR) ✅
+- Expenses: 1,908.92 QAR this month, 1 receipt flagged for review surfaced ✅
+- Groq commentary: every figure traced to the facts (weather line, due-tomorrow task, flagged receipt, delivered revenue) ✅
+- Exactly **one** HTML email per run (message id verified) after the Merge fix ✅
+- Public tunnel → 200 OK with the full briefing payload ✅
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -290,7 +319,7 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ## 🛠 Tech Stack
 
-n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b` vision, `whisper-large-v3-turbo` audio) · **Ollama (`nomic-embed-text`, local 768-dim embeddings)** · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
+n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b` vision, `whisper-large-v3-turbo` audio) · **Ollama (`nomic-embed-text`, local 768-dim embeddings)** · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Open-Meteo API (weather) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
 
 ## 🚀 How To Run
 
@@ -317,6 +346,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | `/webhook/receipt-expense` | POST `{ image_base64, mime_type }` | Receipt photo → vision extraction → finance validation → Sheets register |
 | `/webhook/expense-digest` | POST `{}` | Monthly expense digest: category totals → Gmail (also runs via cron on the 1st) |
 | `/webhook/voice-task` | POST `{ audio_base64, mime_type }` | Voice note → Whisper transcription → task extraction → deterministic validation → Sheets log |
+| `/webhook/daily-briefing` | POST `{}` | Morning briefing: KPIs in code + weather → AI commentary → Gmail (also runs via cron at 07:00) |
 | `/form/kb-upload` | FORM (PDF upload) | Human KB ingest: paste text or upload PDF |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
@@ -327,7 +357,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 12 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 13 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -346,6 +376,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | NL→Data Analytics / NL2SQL-style Agent | Ask Your Data (Groq query planner, whitelist validator, deterministic JS execution engine) |
 | Vision AI / Multimodal Extraction | Receipt Vision Tracker (Groq qwen3.8 vision, finance-grade validation, duplicate hash, monthly digest) |
 | Voice AI & Speech Processing | Voice Note to Task (Groq Whisper v3-turbo multipart transcription, LLM task extraction, deterministic deadline resolver, transcript-hash dedupe) |
+| Scheduled Jobs & Reporting | Daily AI Briefing (cron + manual trigger, Open-Meteo weather, KPI engine in code, facts-only Groq commentary, HTML email) |
 
 ---
 
