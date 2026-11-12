@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Seven production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, and **recruitment CV screening**.
+> Eight production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, and a complete **recruitment funnel: CV screening → interview scheduling**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -17,6 +17,7 @@
 | 5 | **[Insurance Claim Intake Bot](#5-insurance-claim-intake-bot)** | AI claim extraction + deterministic underwriting rules: coverage matrix, fraud scoring, 4-tier routing | 3 scenarios: auto-settle ✅ · coverage mismatch caught ✅ · fraud score 5 → SIU ✅ |
 | 6 | **[Restaurant AI Receptionist](#6-restaurant-ai-receptionist)** | Two-workflow chat system: AI receptionist with memory + kitchen API that validates items, prices with VAT 5% and emails invoices | Off-menu item refused with suggestions ✅ · 77.70 QAR order confirmed, invoice emailed ✅ |
 | 7 | **[CV Screening & Ranking Bot](#7-cv-screening--ranking-bot)** | Recruitment intake form: PDF CV text extraction → LLM match score (0–100), verdict, strengths/gaps/red flags → Google Sheets ranking log | 3-page PDF CV parsed → scored & logged to `CV_Screening_Log` ✅ · retry-on-fail against provider rate limits ✅ |
+| 8 | **[Interview Scheduler](#8-interview-scheduler)** | Deterministic slot engine (Sun–Thu, Doha hours): books first free slot, prevents double-booking, Gmail invite with Add-to-Calendar, waitlist fallback | Booking #1 → `Sun 10:00` ✅ · Booking #2 auto-shifted to `11:00` (double-booking blocked) ✅ · invite emailed ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -117,6 +118,31 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 8. Interview Scheduler
+
+**Problem:** After screening, coordinating interview times is email ping-pong — slots get double-booked, confirmations get lost.
+
+**Solution:** Webhook intake (`{ name, email, role }`) → **deterministic slot engine** (code, not AI): Qatar work week Sun–Thu, fixed Doha-hours slots, skips slots already booked in the `Interview_Schedule` sheet → books the earliest free slot → Gmail confirmation with a one-click **Add to Google Calendar** link → JSON result with alternates.
+
+**Scheduling rules (all in auditable code):**
+- Work week: Sunday–Thursday (Qatar) · Slots: 10:00 / 11:00 / 14:00 / 15:00 GMT+3 · 45-minute duration · 14-day horizon
+- Double-booking prevention: a booked start time is never offered again
+- Fully booked → polite **waitlist** email instead of a broken booking
+- Availability is one `CONFIG` object in the code node — no re-engineering to change hours
+
+**Engineering detail:**
+- Sheet bootstrap runs on a **side branch** (`onError: continue`) so the booking data path never sees sheet-API noise — same pattern as the CV bot
+- Webhook v2 payloads nest JSON under `body` — intake node normalizes both shapes
+
+**Live test evidence:**
+- Booking #1 (Thursday): first working day correctly resolved to **Sunday 10:00** ✅
+- Booking #2: slot **auto-shifted to 11:00** — double-booking blocked ✅
+- Confirmation email delivered with working calendar link (`email_sent: true`) ✅
+
+**Part of the recruitment funnel:** CV Screening Bot scores candidates → this scheduler books the interview — the same sheet workbook holds both logs.
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -169,6 +195,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | `/webhook/restaurant-order` | POST `{ items, customer_email }` | Menu validation, VAT pricing, invoice email |
 | `/webhook/resto-chat-trigger-01/chat` | POST `{ chatInput }` | AI receptionist conversation |
 | `/form/cv-screening` | FORM (PDF upload) | CV screening: 0–100 match score → Google Sheets log |
+| `/webhook/interview-scheduler` | POST `{ name, email, role }` | Deterministic interview slot booking + calendar invite |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
 3. Demos: open any file in `demos/` in a browser. They default to the public tunnel; for a local instance, change the base URL constant at the top of each demo's JS back to `localhost:5678`.
@@ -178,7 +205,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 7 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 8 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -191,6 +218,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | Automated Invoicing & Email | Restaurant Order API (HTML invoice via Gmail) |
 | Process Optimization (5/5) | Auto-settle tiering, outbox pattern, graceful degradation |
 | Recruitment / Talent Screening | CV Screening Bot (0–100 match scoring, strengths/gaps, Sheets ranking log) |
+| Interview Coordination & Scheduling | Interview Scheduler (double-booking prevention, calendar invites, waitlist) |
 | AI Model Vendor Resilience | Live provider model-list verification + retry-on-fail after Groq/Mistral API changes |
 
 ---

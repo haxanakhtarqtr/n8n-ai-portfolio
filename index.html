@@ -145,9 +145,9 @@
 <header class="hero">
   <div class="wrap">
     <h1>AI Automation Specialist — n8n + LLM Engineer</h1>
-    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, recruitment CV screening, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
+    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, a complete recruitment funnel (CV screening → interview scheduling), and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
     <div class="pills">
-      <span class="pill green">7 workflows, all tested live</span>
+      <span class="pill green">8 workflows, all tested live</span>
       <span class="pill">15+ years — finance, insurance, sales operations</span>
       <span class="pill">Doha, Qatar — open to GCC and remote roles</span>
     </div>
@@ -174,6 +174,7 @@
       <div class="skill"><span>Live Operations Dashboards</span><span class="rating">4/5</span></div>
       <div class="skill"><span>Vercel &amp; Cloudflare Deployment</span><span class="rating">5/5</span></div>
       <div class="skill"><span>Recruitment &amp; CV Screening</span><span class="rating">4/5</span></div>
+      <div class="skill"><span>Scheduling &amp; Calendar Automation</span><span class="rating">4/5</span></div>
     </div>
   </div>
 </section>
@@ -181,7 +182,7 @@
 <section id="projects">
   <div class="wrap">
     <div class="sec-label">Projects</div>
-    <div class="sec-title">Seven production pipelines</div>
+    <div class="sec-title">Eight production pipelines</div>
     <div class="sec-sub">Each pipeline follows the same rule: the AI extracts, deterministic code decides. Payouts, approvals and escalations are always auditable.</div>
     <div class="proj-grid">
 
@@ -263,6 +264,19 @@
         </div>
       </div>
 
+      <div class="proj">
+        <div class="proj-head">
+          <h3>Interview Scheduler</h3>
+          <span class="status st-green">Double-booking blocked in live test</span>
+        </div>
+        <div class="proj-body">Part 2 of the recruitment funnel: a deterministic slot engine (Sunday-Thursday, Doha hours) books the earliest free interview slot, never re-offers a booked time, emails the candidate a confirmation with a one-click Add-to-Calendar link, and falls back to a polite waitlist when fully booked. The AI never picks the slot — code does.</div>
+        <div class="proj-foot">
+          <a class="btn primary" href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio/blob/main/CASE-STUDY-interview-scheduler.md">Case study</a>
+          <a class="btn" href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio/blob/main/workflows/interview-scheduler.workflow.ts">Source</a>
+          <span class="src-path">Gmail invites · Sheets schedule</span>
+        </div>
+      </div>
+
       <div class="proj" style="grid-column: 1 / -1;">
         <div class="proj-head">
           <h3>Live Ops Dashboard</h3>
@@ -283,7 +297,7 @@
 <section id="architecture">
   <div class="wrap">
     <div class="sec-label">Architecture</div>
-    <div class="sec-title">One pattern, seven pipelines</div>
+    <div class="sec-title">One pattern, eight pipelines</div>
     <div class="sec-sub">LLMs run at low temperature for deterministic extraction. Every decision that touches money or escalation is plain code — reviewable, testable, auditable.</div>
     <div class="arch"># intake            webhook (WhatsApp / invoice / email / claim / GET) + n8n form (PDF CV upload)
         |
