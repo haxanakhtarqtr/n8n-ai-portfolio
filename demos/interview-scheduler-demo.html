@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Interview Scheduler — Live Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #60a5fa; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 1fr 1.15fr; gap: 20px; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  label { display: block; font-size: 0.78rem; color: #94a3b8; margin: 10px 0 4px; }
+  input {
+    width: 100%; background: #0f172a; color: #cbd5e1; border: 1px solid #334155;
+    border-radius: 8px; padding: 10px 12px; font-size: 0.88rem;
+  }
+  input:focus { outline: none; border-color: #60a5fa; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  button {
+    padding: 10px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.88rem; font-weight: 600; transition: all 0.2s;
+  }
+  .btn-primary { background: #2563eb; color: white; flex-grow: 1; }
+  .btn-primary:hover { background: #1d4ed8; transform: translateY(-1px); }
+  .btn-primary:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .btn-sample { background: #334155; color: #cbd5e1; font-size: 0.75rem; padding: 8px 10px; }
+  .btn-sample:hover { background: #475569; }
+  .decision-banner {
+    padding: 14px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 700;
+    display: none; font-size: 1rem; text-align: center;
+  }
+  .d-booked { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .d-waitlist { background: #451a03; border: 1px solid #f59e0b; color: #fcd34d; display: block; }
+  .d-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .d-error { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .slot-hero {
+    background: #0f172a; border: 1px solid #334155; border-radius: 10px;
+    padding: 16px; text-align: center; margin-bottom: 14px;
+  }
+  .slot-hero .when { font-size: 1.25rem; font-weight: 800; color: #f1f5f9; }
+  .slot-hero .sub { font-size: 0.78rem; color: #64748b; margin-top: 4px; }
+  .gcal-btn {
+    display: inline-block; margin-top: 12px; padding: 10px 20px; border-radius: 8px;
+    background: #1a73e8; color: #fff; text-decoration: none; font-weight: 700; font-size: 0.88rem;
+  }
+  .gcal-btn:hover { background: #1765cc; }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .kv { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; }
+  .kv .val { font-size: 0.92rem; font-weight: 700; color: #f1f5f9; word-break: break-all; }
+  .kv .lbl { font-size: 0.68rem; color: #64748b; margin-top: 2px; }
+  .alt-list { list-style: none; }
+  .alt-list li {
+    background: #0f172a; border: 1px dashed #334155; border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 6px; font-size: 0.82rem;
+    font-family: 'Consolas', monospace; color: #cbd5e1;
+  }
+  section.result-block { margin-bottom: 12px; }
+  section.result-block h3 { font-size: 0.78rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .email-ok { color: #86efac; font-size: 0.85rem; }
+  .email-no { color: #fca5a5; font-size: 0.85rem; }
+  .placeholder { color: #64748b; text-align: center; padding: 60px 20px; font-size: 0.9rem; }
+  .meta { color: #64748b; font-size: 0.75rem; margin-top: 8px; text-align: right; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📅 Interview Scheduler</h1>
+    <p>Deterministic slot engine — Qatar work week, double-booking prevention, calendar invites · n8n portfolio demo</p>
+    <div class="badges">
+      <span class="badge">Sun–Thu · Doha Hours</span>
+      <span class="badge">Double-Booking Prevention</span>
+      <span class="badge">Add-to-Calendar Link</span>
+      <span class="badge">Gmail Invite</span>
+      <span class="badge">Waitlist Fallback</span>
+      <span class="badge">Sheets Booking Log</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>👤 Candidate Referral</h2>
+      <p style="font-size:0.78rem;color:#64748b;margin-bottom:6px;">Recruiter (or the CV Screening Bot) submits a candidate who passed screening.</p>
+      <label>Candidate Name</label>
+      <input id="name" type="text" placeholder="e.g. Fatima Al-Marri">
+      <label>Candidate Email</label>
+      <input id="email" type="email" placeholder="candidate@example.com">
+      <label>Role</label>
+      <input id="role" type="text" placeholder="e.g. AI Automation Engineer">
+      <div class="btn-row">
+        <button class="btn-sample" onclick="loadSample()">📝 Load sample</button>
+      </div>
+      <div class="btn-row">
+        <button class="btn-primary" id="submitBtn" onclick="bookSlot()">📅 Book Interview Slot</button>
+      </div>
+      <p style="font-size:0.72rem;color:#475569;margin-top:14px;">
+        ⚙️ Endpoint: this demo posts to the public tunnel. For a local instance, change
+        <code style="color:#64748b;">WEBHOOK_URL</code> to <code style="color:#64748b;">http://localhost:5678</code>.
+        Availability config lives in the <code style="color:#64748b;">Pick Interview Slot</code> code node.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Booking Result</h2>
+      <div id="decisionBanner" class="decision-banner"></div>
+      <div id="resultArea"><div class="placeholder">Booking result will appear here after submission</div></div>
+      <div class="meta" id="metaInfo"></div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo · Part of the AI recruitment funnel with the <span>CV Screening Bot</span></footer>
+</div>
+
+<script>
+// Default: public tunnel. For local n8n: 'http://localhost:5678/webhook/interview-scheduler'
+const WEBHOOK_URL = 'https://chat.hasanakhtar.co.uk/webhook/interview-scheduler';
+
+function loadSample() {
+  document.getElementById('name').value = 'Fatima Al-Marri';
+  document.getElementById('email').value = 'fatima.almarri@example.com';
+  document.getElementById('role').value = 'AI Automation Engineer';
+}
+
+function esc(s) { return String(s == null ? '' : s); }
+
+async function bookSlot() {
+  const payload = {
+    name: document.getElementById('name').value.trim(),
+    email: document.getElementById('email').value.trim(),
+    role: document.getElementById('role').value.trim() || 'Interview'
+  };
+  if (!payload.name || !payload.email) { alert('Please enter candidate name and email (or load the sample).'); return; }
+
+  const banner = document.getElementById('decisionBanner');
+  const resultArea = document.getElementById('resultArea');
+  const btn = document.getElementById('submitBtn');
+  const meta = document.getElementById('metaInfo');
+
+  btn.disabled = true; btn.textContent = '⏳ Booking...';
+  banner.className = 'decision-banner d-loading';
+  banner.textContent = '⚙️ Deterministic slot engine picking the earliest free slot...';
+  resultArea.innerHTML = '<div class="placeholder">Waiting for n8n workflow response...</div>';
+  const startTime = performance.now();
+
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await response.json();
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+
+    if (data.status === 'booked') {
+      banner.className = 'decision-banner d-booked';
+      banner.textContent = '✅ Interview booked — ' + esc(data.display);
+      resultArea.innerHTML =
+        '<div class="slot-hero">' +
+          '<div class="when">🗓 ' + esc(data.display) + '</div>' +
+          '<div class="sub">' + esc(data.duration_min) + ' minutes · Doha, Qatar (GMT+3) · booked in ' + elapsed + 's</div>' +
+          '<a class="gcal-btn" href="' + esc(data.gcal_link) + '" target="_blank" rel="noopener">➕ Add to Google Calendar</a>' +
+        '</div>' +
+        '<section class="result-block"><h3>Details</h3><div class="kv-grid">' +
+          '<div class="kv"><div class="lbl">Candidate</div><div class="val">' + esc(data.candidate_name) + '</div></div>' +
+          '<div class="kv"><div class="lbl">Email</div><div class="val">' + esc(data.candidate_email) + '</div></div>' +
+          '<div class="kv"><div class="lbl">Role</div><div class="val">' + esc(data.role) + '</div></div>' +
+          '<div class="kv"><div class="lbl">Status</div><div class="val">Confirmed</div></div>' +
+        '</div></section>' +
+        '<section class="result-block"><h3>Alternate slots offered</h3><ul class="alt-list">' +
+          ((data.alternates && data.alternates.length) ? data.alternates.map(a => '<li>• ' + esc(a) + '</li>').join('') : '<li>— none remaining in horizon —</li>') +
+        '</ul></section>' +
+        '<section class="result-block"><h3>Confirmation email</h3>' +
+          (data.email_sent ? '<div class="email-ok">📧 Gmail invite sent to ' + esc(data.candidate_email) + ' with the calendar link</div>'
+                           : '<div class="email-no">⚠️ Email could not be sent (check Gmail credential) — booking still confirmed</div>') +
+        '</section>';
+    } else if (data.status === 'waitlist') {
+      banner.className = 'decision-banner d-waitlist';
+      banner.textContent = '⏳ Fully booked — candidate added to waitlist';
+      resultArea.innerHTML =
+        '<section class="result-block"><h3>Message</h3><div class="kv"><div class="val" style="font-weight:400;font-size:0.88rem;">' + esc(data.message) + '</div></div></section>' +
+        '<section class="result-block"><h3>Candidate</h3><div class="kv-grid">' +
+          '<div class="kv"><div class="lbl">Name</div><div class="val">' + esc(data.candidate_name) + '</div></div>' +
+          '<div class="kv"><div class="lbl">Role</div><div class="val">' + esc(data.role) + '</div></div>' +
+        '</div></section>' +
+        '<section class="result-block"><h3>Email</h3><div class="email-no">A polite waitlist notice was ' +
+          (data.email_sent ? 'sent' : 'attempted (check Gmail credential)') + '.</div></section>';
+    } else {
+      throw new Error(esc(data.message || 'Unexpected response'));
+    }
+    meta.textContent = 'POST ' + WEBHOOK_URL.replace('https://', '') + ' · responded in ' + elapsed + 's';
+  } catch (e) {
+    banner.className = 'decision-banner d-error';
+    banner.textContent = '❌ Booking failed';
+    resultArea.innerHTML = '<div class="placeholder">' + esc(e.message) + '<br><br>Check that the workflow is active and the endpoint URL is correct.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '📅 Book Interview Slot';
+  }
+}
+</script>
+</body>
+</html>
