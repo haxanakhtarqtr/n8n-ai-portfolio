@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RAG Knowledge Base — Live Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1050px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #60a5fa; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  textarea {
+    width: 100%; background: #0f172a; color: #cbd5e1; border: 1px solid #334155;
+    border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; resize: vertical; min-height: 90px;
+    font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: #60a5fa; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip {
+    padding: 7px 11px; border-radius: 18px; border: 1px solid #334155;
+    background: #0f172a; color: #94a3b8; font-size: 0.74rem; cursor: pointer; transition: all 0.15s;
+    text-align: left;
+  }
+  .chip:hover { border-color: #60a5fa; color: #93c5fd; }
+  .btn-row { display: flex; gap: 10px; margin-top: 14px; }
+  button.ask {
+    padding: 11px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 700; background: #2563eb; color: white; flex-grow: 1; transition: all 0.2s;
+  }
+  button.ask:hover { background: #1d4ed8; transform: translateY(-1px); }
+  button.ask:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .status-banner {
+    padding: 13px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 700;
+    display: none; font-size: 0.95rem; text-align: center;
+  }
+  .s-answer  { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .s-refuse  { background: #451a03; border: 1px solid #f59e0b; color: #fcd34d; display: block; }
+  .s-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .s-error   { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .answer-box {
+    background: #0f172a; border: 1px solid #334155; border-left: 3px solid #22c55e;
+    border-radius: 8px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.55;
+    white-space: pre-wrap; word-wrap: break-word;
+  }
+  .answer-box.refused { border-left-color: #f59e0b; color: #cbd5e1; }
+  .cite {
+    display: inline-block; background: #1e3a5f; color: #93c5fd; border-radius: 4px;
+    padding: 0 6px; font-size: 0.78rem; font-weight: 700; margin: 0 1px;
+  }
+  .src {
+    background: #0f172a; border: 1px dashed #334155; border-radius: 8px;
+    padding: 9px 12px; margin-bottom: 7px;
+  }
+  .src .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+  .src .name { font-size: 0.84rem; color: #cbd5e1; font-weight: 600; }
+  .src .score { font-size: 0.75rem; color: #64748b; font-family: 'Consolas', monospace; }
+  .bar { height: 4px; background: #334155; border-radius: 2px; margin-top: 5px; overflow: hidden; }
+  .bar i { display: block; height: 100%; background: linear-gradient(90deg, #3b82f6, #22c55e); border-radius: 2px; }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 4px; }
+  @media (max-width: 500px) { .kv-grid { grid-template-columns: 1fr; } }
+  .kv { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; }
+  .kv .val { font-size: 0.9rem; font-weight: 700; color: #f1f5f9; }
+  .kv .lbl { font-size: 0.66rem; color: #64748b; margin-top: 2px; }
+  section.result-block { margin-bottom: 12px; }
+  section.result-block h3 { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .placeholder { color: #64748b; text-align: center; padding: 55px 20px; font-size: 0.9rem; }
+  .kb-note {
+    margin-top: 14px; font-size: 0.72rem; color: #475569; line-height: 1.5;
+  }
+  .kb-note code { color: #64748b; }
+  .meta { color: #64748b; font-size: 0.74rem; margin-top: 8px; text-align: right; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🧠 RAG Knowledge Base Chatbot</h1>
+    <p>Ask anything inside the indexed documents — the bot answers only from them, with citations · n8n portfolio demo</p>
+    <div class="badges">
+      <span class="badge">Ollama nomic-embed-text (768-dim, local)</span>
+      <span class="badge">Cosine similarity in auditable code</span>
+      <span class="badge">Groq gpt-oss-120b · temp 0.2</span>
+      <span class="badge">Citations [1] [2]</span>
+      <span class="badge">Refuses ungrounded answers</span>
+      <span class="badge">No vector DB — Google Sheets store</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>❓ Your Question</h2>
+      <textarea id="question" placeholder="e.g. How many remote work days per week are allowed?"></textarea>
+      <div class="chips">
+        <button class="chip" onclick="useChip(this)">How much notice must I give when resigning?</button>
+        <button class="chip" onclick="useChip(this)">What is the overtime rate and who approves it?</button>
+        <button class="chip" onclick="useChip(this)">Can the company keep my passport?</button>
+        <button class="chip" onclick="useChip(this)">How is the end of service gratuity calculated?</button>
+        <button class="chip" onclick="useChip(this)">What happens if document extraction confidence is low?</button>
+        <button class="chip" onclick="useChip(this)">What is the capital of France?</button>
+      </div>
+      <div class="btn-row">
+        <button class="ask" id="askBtn" onclick="askKB()">🔍 Ask the Knowledge Base</button>
+      </div>
+      <p class="kb-note">
+        <b>Indexed now:</b> <i>Qatar HR Policy Handbook</i> (probation, leave, overtime, gratuity, resignation, visa, remote work, expenses) and <i>AI Automation Services Guide</i> (pipelines, IDP, RAG, delivery model).<br><br>
+        ⚙️ Endpoint: this demo posts to the public tunnel. For a local instance, change
+        <code>WEBHOOK_URL</code> to <code>http://localhost:5678</code>. Retrieval config (<code>topK 4</code>, <code>minScore 0.3</code>) lives in the <code>Retrieve Top Chunks</code> code node.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Grounded Answer</h2>
+      <div id="statusBanner" class="status-banner"></div>
+      <div id="resultArea"><div class="placeholder">Answer, citations and similarity scores will appear here</div></div>
+      <div class="meta" id="metaInfo"></div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo · RAG from scratch: embeddings → Sheets store → cosine search in code</footer>
+</div>
+
+<script>
+// Default: public tunnel. For local n8n: 'http://localhost:5678/webhook/knowledge-base'
+const WEBHOOK_URL = 'https://chat.hasanakhtar.co.uk/webhook/knowledge-base';
+
+function useChip(btn) {
+  document.getElementById('question').value = btn.textContent;
+}
+function esc(s) { return String(s == null ? '' : s); }
+// render [1] [2] citations as badges
+function renderCitations(text) {
+  return esc(text).replace(/【(\d+)】/g, '<span class="cite">[$1]</span>')
+                  .replace(/\[(\d+)\]/g, '<span class="cite">[$1]</span>');
+}
+
+async function askKB() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) { alert('Type a question (or click a sample chip).'); return; }
+
+  const banner = document.getElementById('statusBanner');
+  const resultArea = document.getElementById('resultArea');
+  const btn = document.getElementById('askBtn');
+  const meta = document.getElementById('metaInfo');
+
+  btn.disabled = true; btn.textContent = '⏳ Embedding → retrieving → generating...';
+  banner.className = 'status-banner s-loading';
+  banner.textContent = '⚙️ Embedding question · cosine search over ' + 'the knowledge base' + ' · Groq drafting grounded answer';
+  resultArea.innerHTML = '<div class="placeholder">Waiting for the RAG pipeline...</div>';
+  const startTime = performance.now();
+
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question })
+    });
+    const data = await response.json();
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+
+    const refused = (data.status !== 'answered') || /not covered in the knowledge base/i.test(data.answer || '');
+
+    banner.className = 'status-banner ' + (refused ? 's-refuse' : 's-answer');
+    banner.textContent = refused
+      ? '🛡 Refused — outside the knowledge base (no grounded answer)'
+      : '✅ Grounded answer found in ' + (data.sources ? data.sources.length : 0) + ' retrieved chunk(s)';
+
+    let html = '<section class="result-block"><h3>Answer' + (refused ? '' : ' (cited from your documents)') + '</h3>' +
+      '<div class="answer-box' + (refused ? ' refused' : '') + '">' + renderCitations(data.answer || '(empty)') + '</div></section>';
+
+    if (data.sources && data.sources.length) {
+      html += '<section class="result-block"><h3>Retrieved sources (cosine similarity)</h3>' +
+        data.sources.map(s => {
+          const pct = Math.min(100, Math.round((s.similarity || 0) * 100));
+          return '<div class="src"><div class="row"><span class="name">📄 ' + esc(s.title) + '</span>' +
+            '<span class="score">' + (s.similarity != null ? s.similarity.toFixed(3) : '—') + '</span></div>' +
+            '<div class="bar"><i style="width:' + pct + '%"></i></div></div>';
+        }).join('') + '</section>';
+    }
+
+    html += '<section class="result-block"><h3>Pipeline telemetry</h3><div class="kv-grid">' +
+      '<div class="kv"><div class="val">' + esc(data.chunks_searched != null ? data.chunks_searched : '—') + '</div><div class="lbl">chunks searched</div></div>' +
+      '<div class="kv"><div class="val">' + elapsed + 's</div><div class="lbl">end-to-end latency</div></div>' +
+      '<div class="kv"><div class="val" style="font-size:0.78rem;">768-dim</div><div class="lbl">embedding vector</div></div>' +
+    '</div></section>';
+
+    resultArea.innerHTML = html;
+    meta.textContent = 'POST ' + WEBHOOK_URL.replace('https://', '') + ' · responded in ' + elapsed + 's';
+  } catch (e) {
+    banner.className = 'status-banner s-error';
+    banner.textContent = '❌ Query failed';
+    resultArea.innerHTML = '<div class="placeholder">' + esc(e.message) + '<br><br>Check that the workflow is active and the endpoint URL is correct.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 Ask the Knowledge Base';
+  }
+}
+</script>
+</body>
+</html>

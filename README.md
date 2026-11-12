@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Eight production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, and a complete **recruitment funnel: CV screening → interview scheduling**.
+> Nine production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, and a **RAG knowledge base chatbot with hand-rolled vector search**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -18,6 +18,7 @@
 | 6 | **[Restaurant AI Receptionist](#6-restaurant-ai-receptionist)** | Two-workflow chat system: AI receptionist with memory + kitchen API that validates items, prices with VAT 5% and emails invoices | Off-menu item refused with suggestions ✅ · 77.70 QAR order confirmed, invoice emailed ✅ |
 | 7 | **[CV Screening & Ranking Bot](#7-cv-screening--ranking-bot)** | Recruitment intake form: PDF CV text extraction → LLM match score (0–100), verdict, strengths/gaps/red flags → Google Sheets ranking log | 3-page PDF CV parsed → scored & logged to `CV_Screening_Log` ✅ · retry-on-fail against provider rate limits ✅ |
 | 8 | **[Interview Scheduler](#8-interview-scheduler)** | Deterministic slot engine (Sun–Thu, Doha hours): books first free slot, prevents double-booking, Gmail invite with Add-to-Calendar, waitlist fallback | Booking #1 → `Sun 10:00` ✅ · Booking #2 auto-shifted to `11:00` (double-booking blocked) ✅ · invite emailed ✅ |
+| 9 | **[RAG Knowledge Base Chatbot](#9-rag-knowledge-base-chatbot)** | Document upload → chunker → Ollama embeddings → cosine vector search in code → Groq grounded answer with citations; refuses when coverage is missing | Remote-work question → "2 days/week, line manager approves" ✅ · France question → refused (`no_match`) ✅ · tunnel test 200 OK ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -143,6 +144,30 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 9. RAG Knowledge Base Chatbot
+
+**Problem:** Company knowledge lives in documents nobody can search at 2am; generic chatbots hallucinate because they answer from the whole internet instead of your facts.
+
+**Solution:** A full **RAG (Retrieval-Augmented Generation) pipeline built from scratch — no vector database**:
+- **Ingest:** browser form (text area + optional PDF, native PDF extraction) *or* programmatic API (`POST { title, type, text }`) → deterministic chunker (900 chars, 120 overlap, sentence-aware breaks) → **Ollama `nomic-embed-text` embeddings (768-dim, fully local & free)** → Google Sheets `KB_Chunks` tab as the vector store
+- **Query:** `POST { question }` → embed the question → **cosine similarity computed in an auditable code node** over every stored chunk (topK 4, minScore 0.3) → Groq `gpt-oss-120b` (temperature 0.2) answers **strictly from the retrieved context** with `[1]`-style citations → **refuses with a fixed phrase when coverage is missing**
+
+**Engineering detail:**
+- **RAG without a vector DB** — every similarity score is reproducible from the stored embedding; swap in Pinecone/pgvector later without touching the retrieval contract
+- **Grounding defense-in-depth** — even weak matches above minScore go to the LLM, which is instructed to refuse ungrounded questions; the France test proved it
+- **Per-item code mode discipline** — the chunk-row builder maps `$('Chunk Document').all() × $input.all()` with a count-mismatch guard (a "run once for all items" collapse bug was caught and fixed in live testing)
+- **Dual ingest** — the same chunker accepts the browser form and the flat API webhook; PDF upload wins when both text and file are provided
+- **Side-branch sheet bootstrap** — same `onError: continue` pattern as the other pipelines
+
+**Live test evidence:**
+- Resignation notice → "**30 days written notice**, or forfeit one month's basic salary [1]" ✅
+- Remote work → "**two days per week**, approved by the line manager after six months [1]" ✅
+- Multi-document query (Services Guide) → "extraction confidence below **90 percent** routes to human review [1]" with `chunks_searched: 5` across 2 documents ✅
+- "What is the capital of France?" → **"This is not covered in the knowledge base yet."** (refusal, not hallucination) ✅
+- Public tunnel query → 200 OK with full sources + similarity scores ✅
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -175,7 +200,7 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ## 🛠 Tech Stack
 
-n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`) · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
+n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`) · **Ollama (`nomic-embed-text`, local 768-dim embeddings)** · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
 
 ## 🚀 How To Run
 
@@ -196,6 +221,9 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | `/webhook/resto-chat-trigger-01/chat` | POST `{ chatInput }` | AI receptionist conversation |
 | `/form/cv-screening` | FORM (PDF upload) | CV screening: 0–100 match score → Google Sheets log |
 | `/webhook/interview-scheduler` | POST `{ name, email, role }` | Deterministic interview slot booking + calendar invite |
+| `/webhook/knowledge-base` | POST `{ question }` | RAG query: cosine search → grounded answer with citations |
+| `/webhook/knowledge-base-upload` | POST `{ title, type, text }` | Programmatic KB ingest: chunk → embed → index |
+| `/form/kb-upload` | FORM (PDF upload) | Human KB ingest: paste text or upload PDF |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
 3. Demos: open any file in `demos/` in a browser. They default to the public tunnel; for a local instance, change the base URL constant at the top of each demo's JS back to `localhost:5678`.
@@ -205,7 +233,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 8 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 9 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -220,6 +248,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | Recruitment / Talent Screening | CV Screening Bot (0–100 match scoring, strengths/gaps, Sheets ranking log) |
 | Interview Coordination & Scheduling | Interview Scheduler (double-booking prevention, calendar invites, waitlist) |
 | AI Model Vendor Resilience | Live provider model-list verification + retry-on-fail after Groq/Mistral API changes |
+| RAG / Embeddings / Vector Search | RAG Knowledge Base (Ollama embeddings, cosine similarity in code, grounded citations) |
 
 ---
 
