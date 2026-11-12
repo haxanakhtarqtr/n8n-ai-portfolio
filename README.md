@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Ten production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, and a **natural-language analytics agent (AI plans, deterministic code executes)**.
+> Eleven production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, a **natural-language analytics agent (AI plans, deterministic code executes)**, and a **receipt-vision expense tracker (AI extracts, code validates)**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -20,6 +20,7 @@
 | 8 | **[Interview Scheduler](#8-interview-scheduler)** | Deterministic slot engine (Sun–Thu, Doha hours): books first free slot, prevents double-booking, Gmail invite with Add-to-Calendar, waitlist fallback | Booking #1 → `Sun 10:00` ✅ · Booking #2 auto-shifted to `11:00` (double-booking blocked) ✅ · invite emailed ✅ |
 | 9 | **[RAG Knowledge Base Chatbot](#9-rag-knowledge-base-chatbot)** | Document upload → chunker → Ollama embeddings → cosine vector search in code → Groq grounded answer with citations; refuses when coverage is missing | Remote-work question → "2 days/week, line manager approves" ✅ · France question → refused (`no_match`) ✅ · tunnel test 200 OK ✅ |
 | 10 | **[Ask Your Data — NL Analytics Agent](#10-ask-your-data--nl-analytics-agent)** | Plain-English question over a spreadsheet → Groq query plan (strict JSON) → deterministic whitelist validation → pure-JS execution engine → grounded answer; LLM never sees the raw data | Delivered revenue **113,445 QAR** (21/30 rows) ✅ · France question → deterministic `plan_rejected` ✅ · tunnel 200 OK ✅ |
+| 11 | **[Receipt & Expense Tracker — Vision AI](#11-receipt--expense-tracker--vision-ai)** | Receipt photo → Groq vision extraction (strict JSON) → deterministic finance validation (line items, VAT math, date, duplicate hash) → code-assigned category → Sheets register + monthly Gmail digest | Planted **104 QAR overcharge caught** ✅ · duplicate resubmission skipped ✅ · memo image → `not_a_receipt` ✅ · digest email SENT (1,861.70 QAR) ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -199,6 +200,34 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 11. Receipt & Expense Tracker — Vision AI
+
+**Problem:** Expense receipts arrive as photos — paper scraps, blurry snaps, WhatsApp forwards. Someone re-types every line into a spreadsheet, VAT math errors slip through, the same receipt gets reimbursed twice, and nobody knows where the money goes until year-end.
+
+**Solution:** A multimodal expense pipeline where **the AI extracts and code decides**:
+- **Intake:** `POST /webhook/receipt-expense { image_base64, mime_type }` — browser demo uploads any receipt photo as base64 (drag & drop, camera roll, desktop files)
+- **Vision extraction (Groq `qwen/qwen3.8-27b`, temp 0.1, `response_format: json_object`):** reads the image and emits ONE strict JSON — vendor, receipt number, date, currency, line items (qty / unit price / amount), subtotal, tax, total, payment method. Extract-only contract: *never compute what is not visible*
+- **Validator (code):** finance-grade deterministic checks — required fields, date sanity (not future, not ancient), **line items sum = subtotal** (1% tolerance), **subtotal + tax = total** (1% tolerance), total > 0, and **duplicate detection** via a `vendor|date|total` hash against the existing register
+- **Category (code):** deterministic keyword map over vendor + line items (meals, fuel, office supplies, telecom, accommodation, software, …) — the LLM's hint is recorded but **code decides**
+- **Decision matrix:** `valid` → log · `needs_review` (flags) → log with flags · `duplicate` → skip · `not_a_receipt` → skip — untrustworthy receipts are flagged, never silently trusted
+- **Monthly digest:** cron (1st, 07:00) *or* `POST /webhook/expense-digest` → deterministic aggregation (per-category sums, top vendors, flagged count) → Groq summary (temp 0.2, grounded on computed numbers) → HTML email via Gmail
+
+**Engineering detail:**
+- **The side-branch bootstrap bug that broke the demo** — `Ensure Expenses Tab` sat in the main chain; once the tab existed, its create-error output produced **zero items** and the whole flow dead-ended with a silent empty-200. Fixed by moving the bootstrap to a parallel side branch (the portfolio's standard pattern) — a real-world lesson in n8n item-flow semantics, documented here on purpose
+- **Provider tier limits caught in live testing** — Groq's free-tier output-token window rejected the first vision call (`max_tokens` reduced), and rapid-fire testing exhausted the Google Sheets 60 reads/min quota; both surfaced as graceful `vision_error` / `needs_review` paths instead of crashes
+- **Vision hallucination guard** — the extraction prompt is extract-only ("never compute a value that is not on the receipt"), so the *validator* — not the model — is the single source of arithmetic truth
+- **Non-QAR transparency** — foreign-currency receipts are logged unconverted and explicitly noted in the digest
+
+**Live test evidence:**
+- Clean office receipt (Al Noor Office Supplies) → vendor, 3 line items, subtotal 239.00, VAT 11.95, total **250.95** — all 6 checks pass, category `office supplies`, logged ✅
+- **Planted-error receipt (Gulf Catering)** — subtotal 1,435.00 + VAT 71.75 = 1,506.75 but total printed **1,610.75** → caught: `needs_review` with *"diff 104.00"*, logged with flags ✅
+- Same receipt resubmitted (twice, incl. via tunnel) → **`duplicate`**, not logged again ✅
+- Meeting-memo image → **`not_a_receipt`**, skipped, nothing logged ✅
+- Monthly digest → *"1,861.70 QAR across 2 receipts"*, per-category table, 1 flagged warning → **Gmail SENT** (message id verified) ✅
+- Public tunnel submission → 200 OK with full extraction + validation payload ✅
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -255,6 +284,8 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | `/webhook/knowledge-base` | POST `{ question }` | RAG query: cosine search → grounded answer with citations |
 | `/webhook/knowledge-base-upload` | POST `{ title, type, text }` | Programmatic KB ingest: chunk → embed → index |
 | `/webhook/ask-data` | POST `{ question }` | NL analytics: Groq query plan → whitelist validation → deterministic execution |
+| `/webhook/receipt-expense` | POST `{ image_base64, mime_type }` | Receipt photo → vision extraction → finance validation → Sheets register |
+| `/webhook/expense-digest` | POST `{}` | Monthly expense digest: category totals → Gmail (also runs via cron on the 1st) |
 | `/form/kb-upload` | FORM (PDF upload) | Human KB ingest: paste text or upload PDF |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
@@ -265,7 +296,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 10 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 11 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -282,6 +313,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | AI Model Vendor Resilience | Live provider model-list verification + retry-on-fail after Groq/Mistral API changes |
 | RAG / Embeddings / Vector Search | RAG Knowledge Base (Ollama embeddings, cosine similarity in code, grounded citations) |
 | NL→Data Analytics / NL2SQL-style Agent | Ask Your Data (Groq query planner, whitelist validator, deterministic JS execution engine) |
+| Vision AI / Multimodal Extraction | Receipt Vision Tracker (Groq qwen3.8 vision, finance-grade validation, duplicate hash, monthly digest) |
 
 ---
 

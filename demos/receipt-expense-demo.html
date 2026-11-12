@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Receipt & Expense Tracker — Vision AI Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #60a5fa; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  .dropzone {
+    border: 2px dashed #334155; border-radius: 10px; padding: 26px 16px;
+    text-align: center; color: #94a3b8; cursor: pointer; transition: all 0.15s;
+    font-size: 0.9rem;
+  }
+  .dropzone:hover, .dropzone.drag { border-color: #60a5fa; color: #93c5fd; background: rgba(96,165,250,0.05); }
+  .dropzone input { display: none; }
+  .preview { text-align: center; margin-top: 12px; }
+  .preview img { max-height: 260px; max-width: 100%; border-radius: 8px; border: 1px solid #334155; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    padding: 8px 12px; border-radius: 18px; border: 1px solid #334155;
+    background: #0f172a; color: #94a3b8; font-size: 0.75rem; cursor: pointer; transition: all 0.15s;
+  }
+  .chip:hover { border-color: #60a5fa; color: #93c5fd; }
+  .chip.tamper { border-color: #78350f; color: #fcd34d; }
+  .chip.tamper:hover { border-color: #f59e0b; }
+  .chip.bad { border-color: #7f1d1d; color: #fca5a5; }
+  .chip.bad:hover { border-color: #ef4444; }
+  .btn-row { margin-top: 14px; }
+  button.ask {
+    width: 100%; padding: 11px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 700; background: #2563eb; color: white; transition: all 0.2s;
+  }
+  button.ask:hover { background: #1d4ed8; transform: translateY(-1px); }
+  button.ask:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .status-banner {
+    padding: 13px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 700;
+    display: none; font-size: 0.95rem; text-align: center;
+  }
+  .s-valid  { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .s-review { background: #422006; border: 1px solid #f59e0b; color: #fcd34d; display: block; }
+  .s-dup    { background: #172554; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .s-notreceipt { background: #1e293b; border: 1px solid #64748b; color: #cbd5e1; display: block; }
+  .s-error  { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .s-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  section.result-block { margin-bottom: 14px; }
+  section.result-block h3 { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .placeholder { color: #64748b; text-align: center; padding: 55px 20px; font-size: 0.9rem; }
+  .fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 500px) { .fields { grid-template-columns: 1fr 1fr; } }
+  .kv { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; }
+  .kv .val { font-size: 0.88rem; font-weight: 700; color: #f1f5f9; word-break: break-word; }
+  .kv .lbl { font-size: 0.66rem; color: #64748b; margin-top: 2px; }
+  table.data { width: 100%; border-collapse: collapse; font-size: 0.78rem; }
+  table.data th { background: #0f172a; color: #93c5fd; text-align: left; padding: 7px 10px; border: 1px solid #334155; }
+  table.data td { padding: 6px 10px; border: 1px solid #283548; color: #cbd5e1; font-family: 'Consolas', monospace; }
+  table.data tr:nth-child(even) td { background: #172033; }
+  .table-scroll { overflow-x: auto; border-radius: 8px; border: 1px solid #334155; }
+  .checks { list-style: none; }
+  .checks li { padding: 5px 0; font-size: 0.84rem; color: #cbd5e1; }
+  .ok { color: #86efac; } .fail { color: #fca5a5; }
+  .flagbox { background: #0f172a; border: 1px solid #b45309; border-left: 3px solid #f59e0b; border-radius: 8px; padding: 10px 14px; font-size: 0.84rem; color: #fcd34d; }
+  .cat-chip {
+    display: inline-block; padding: 5px 14px; border-radius: 16px; font-size: 0.8rem; font-weight: 700;
+    background: #1e3a5f; color: #93c5fd; border: 1px solid #3b82f6;
+  }
+  .meta { color: #64748b; font-size: 0.74rem; margin-top: 8px; text-align: right; }
+  .note { margin-top: 14px; font-size: 0.72rem; color: #475569; line-height: 1.5; }
+  .note code { color: #64748b; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🧾 Receipt &amp; Expense Tracker — Vision AI</h1>
+    <p>Upload a receipt photo — a vision model extracts the data, deterministic code validates the math, detects duplicates and assigns the category · n8n portfolio demo</p>
+    <div class="badges">
+      <span class="badge">Groq vision · qwen3.8-27b · temp 0.1 · strict JSON</span>
+      <span class="badge">Finance-grade checks (line items, VAT, date)</span>
+      <span class="badge">Duplicate hash (vendor+date+total)</span>
+      <span class="badge">Category by code — not the LLM</span>
+      <span class="badge">Planted 104 QAR overcharge caught live</span>
+      <span class="badge">Monthly digest → Gmail</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>📸 Receipt Image</h2>
+      <div class="dropzone" id="dropzone" onclick="document.getElementById('fileInput').click()">
+        Drop a receipt image here, or click to browse<br><span style="font-size:0.75rem;color:#64748b;">PNG / JPG — sent as base64 to the webhook</span>
+        <input type="file" id="fileInput" accept="image/*">
+      </div>
+      <div class="preview" id="preview" style="display:none;"><img id="previewImg" alt="receipt preview"></div>
+      <div class="samples">
+        <button class="chip" onclick="useSample('assets/receipt-1.png', this)">✅ Sample: clean office receipt</button>
+        <button class="chip tamper" onclick="useSample('assets/receipt-2.png', this)">⚠️ Sample: tampered total (+104 QAR)</button>
+        <button class="chip bad" onclick="useSample('assets/receipt-memo.png', this)">🚫 Sample: not a receipt</button>
+      </div>
+      <div class="btn-row">
+        <button class="ask" id="askBtn" onclick="analyze()" disabled>🔍 Analyze Receipt</button>
+      </div>
+      <p class="note">
+        ⚙️ Endpoint: this demo posts to the public tunnel (<code>POST /webhook/receipt-expense</code>). For a local instance, change
+        <code>WEBHOOK_URL</code> to <code>http://localhost:5678</code>. Valid and needs_review receipts are logged to a Google Sheets
+        expense register; duplicates and non-receipts are skipped. Every month the workflow emails a category digest.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Extraction &amp; Validation</h2>
+      <div id="statusBanner" class="status-banner"></div>
+      <div id="resultArea"><div class="placeholder">Extracted fields, line items, validation checks and flags will appear here</div></div>
+      <div class="meta" id="metaInfo"></div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo · The AI extracts, the code decides</footer>
+</div>
+
+<script>
+// Default: public tunnel. For local n8n: 'http://localhost:5678/webhook/receipt-expense'
+const WEBHOOK_URL = 'https://chat.hasanakhtar.co.uk/webhook/receipt-expense';
+
+let currentImage = null; // { base64, mime }
+
+function esc(s) { return String(s == null ? '' : s); }
+const fmt = n => (typeof n === 'number') ? n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : esc(n ?? '-');
+
+function setStatus(cls, text) {
+  const b = document.getElementById('statusBanner');
+  b.className = 'status-banner ' + cls;
+  b.textContent = text;
+}
+
+async function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = () => resolve({ base64: r.result.split(',')[1], mime: file.type || 'image/png' });
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function loadImage(file) {
+  const data = await fileToBase64(file);
+  currentImage = data;
+  document.getElementById('preview').style.display = 'block';
+  document.getElementById('previewImg').src = 'data:' + data.mime + ';base64,' + data.base64;
+  document.getElementById('askBtn').disabled = false;
+}
+
+async function useSample(path, btn) {
+  try {
+    btn.textContent = '⏳ loading...';
+    const res = await fetch(path);
+    const blob = await res.blob();
+    await loadImage(new File([blob], path.split('/').pop(), { type: blob.type || 'image/png' }));
+    btn.textContent = btn.textContent === '⏳ loading...' ? '✅ loaded — press Analyze' : btn.textContent;
+    setTimeout(() => { analyze(); }, 150);
+  } catch (e) {
+    btn.textContent = '❌ sample failed to load';
+  }
+}
+
+document.getElementById('fileInput').addEventListener('change', e => { if (e.target.files[0]) loadImage(e.target.files[0]); });
+const dz = document.getElementById('dropzone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag'));
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.classList.remove('drag');
+  if (e.dataTransfer.files[0]) loadImage(e.dataTransfer.files[0]);
+});
+
+function resultTable(items) {
+  if (!items || !items.length) return '<div style="color:#64748b;font-size:0.82rem;">No line items extracted.</div>';
+  const head = '<tr><th>Item</th><th>Qty</th><th>Unit</th><th>Amount</th></tr>';
+  const body = items.map(li => '<tr><td>' + esc(li.description) + '</td><td>' + esc(li.qty ?? '-') + '</td><td>' + fmt(li.unit_price) + '</td><td>' + fmt(li.amount) + '</td></tr>').join('');
+  return '<div class="table-scroll"><table class="data"><thead>' + head + '</thead><tbody>' + body + '</tbody></table></div>';
+}
+
+async function analyze() {
+  if (!currentImage) return;
+  const btn = document.getElementById('askBtn');
+  btn.disabled = true; btn.textContent = '⏳ Vision extract → validate → log...';
+  setStatus('s-loading', '⚙️ Vision model reading the image · deterministic finance checks · duplicate detection');
+  document.getElementById('resultArea').innerHTML = '<div class="placeholder">Waiting for the extraction pipeline...</div>';
+  const t0 = performance.now();
+  try {
+    const res = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image_base64: currentImage.base64, mime_type: currentImage.mime, submitted_by: 'portfolio-demo' })
+    });
+    const d = await res.json();
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    const st = d.status;
+    const banner = {
+      'valid': ['s-valid', '✅ Valid receipt — logged to the expense register'],
+      'needs_review': ['s-review', '⚠️ Flagged for review — logged with flags (math does not add up!)'],
+      'duplicate': ['s-dup', '🔷 Duplicate — ' + (d.duplicate_of ? 'same vendor + date + total as ' + d.duplicate_of : 'already logged') + ' (not logged again)'],
+      'not_a_receipt': ['s-notreceipt', '🚫 Not a receipt — image skipped'],
+      'vision_error': ['s-error', '❌ Vision extraction failed — nothing logged (transient provider issue, try again)']
+    }[st] || ['s-error', '❌ Unexpected status: ' + st];
+    setStatus(banner[0], banner[1]);
+
+    let html = '';
+    const ex = d.extracted;
+    if (ex) {
+      html += '<section class="result-block"><h3>Extracted fields</h3><div class="fields">' +
+        '<div class="kv"><div class="val">' + esc(ex.vendor) + '</div><div class="lbl">vendor</div></div>' +
+        '<div class="kv"><div class="val">' + esc(ex.date) + '</div><div class="lbl">date</div></div>' +
+        '<div class="kv"><div class="val">' + esc(ex.receipt_number ?? '-') + '</div><div class="lbl">receipt no</div></div>' +
+        '<div class="kv"><div class="val">' + fmt(ex.total) + ' ' + esc(ex.currency ?? '') + '</div><div class="lbl">total</div></div>' +
+        '<div class="kv"><div class="val">' + fmt(ex.subtotal) + '</div><div class="lbl">subtotal</div></div>' +
+        '<div class="kv"><div class="val">' + fmt(ex.tax) + '</div><div class="lbl">tax / VAT</div></div>' +
+        '</div></section>';
+
+      if (d.category) html += '<section class="result-block"><h3>Category (assigned by code)</h3><span class="cat-chip">' + esc(d.category) + '</span></section>';
+
+      html += '<section class="result-block"><h3>Line items</h3>' + resultTable(ex.line_items) + '</section>';
+    }
+
+    if (d.validation && d.validation.checks && d.validation.checks.length) {
+      html += '<section class="result-block"><h3>Validation checks (deterministic, in code)</h3><ul class="checks">' +
+        d.validation.checks.map(c => '<li class="' + (c.pass ? 'ok' : 'fail') + '">' + (c.pass ? '✅' : '❌') + ' ' + esc(c.check) + '</li>').join('') +
+        '</ul></section>';
+    }
+    if (d.validation && d.validation.flags && d.validation.flags.length) {
+      html += '<section class="result-block"><h3>Flags</h3><div class="flagbox">' + d.validation.flags.map(f => esc(f)).join('<br>') + '</div></section>';
+    }
+    if (d.expense_id) {
+      html += '<section class="result-block"><h3>Register entry</h3><div class="kv"><div class="val">' + esc(d.expense_id) + '</div><div class="lbl">expense_id (logged to Google Sheets)</div></div></section>';
+    }
+    if (d.stats && d.stats.expenses_on_file !== undefined) {
+      html += '<section class="result-block"><h3>Pipeline telemetry</h3><div class="fields">' +
+        '<div class="kv"><div class="val">' + d.stats.expenses_on_file + '</div><div class="lbl">receipts already on file</div></div>' +
+        '<div class="kv"><div class="val">' + elapsed + 's</div><div class="lbl">end-to-end latency</div></div>' +
+        '</div></section>';
+    }
+    document.getElementById('resultArea').innerHTML = html;
+    document.getElementById('metaInfo').textContent = 'POST ' + WEBHOOK_URL.replace('https://', '').split('/')[0] + ' · responded in ' + elapsed + 's';
+  } catch (e) {
+    setStatus('s-error', '❌ Request failed: ' + e.message);
+    document.getElementById('resultArea').innerHTML = '<div class="placeholder">Check that the workflow is active and the endpoint URL is correct.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '🔍 Analyze Receipt';
+  }
+}
+</script>
+</body>
+</html>
