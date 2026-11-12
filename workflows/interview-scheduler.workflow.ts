@@ -8,11 +8,11 @@ import { workflow, node, links } from '@n8n-as-code/transformer';
 // ──────────────────────────────────────────────────────────────────
 // Property name                    Node type (short)         Flags
 // InterviewRequestHook               webhook
-// EnsureScheduleSheet                googleSheets               [onError→regular] [creds]
-// LoadBookedSlots                    googleSheets               [onError→regular] [creds] [alwaysOutput]
+// EnsureScheduleSheet                googleSheets               [onError→regular] [creds] [retry]
+// LoadBookedSlots                    googleSheets               [onError→regular] [creds] [alwaysOutput] [retry]
 // PickInterviewSlot                  code
 // BuildBookingRow                    code
-// BookSlot                           googleSheets               [creds]
+// BookSlot                           googleSheets               [creds] [retry]
 // BuildConfirmation                  code
 // SendConfirmation                   gmail                      [onError→regular] [creds]
 // ReturnBookingResult                respondToWebhook
@@ -80,6 +80,9 @@ export class InterviewSchedulerWorkflow {
         position: [-400, 300],
         credentials: { googleSheetsOAuth2Api: { id: '24dHedceL8i5PJLH', name: 'Google Sheets account' } },
         onError: 'continueRegularOutput',
+        retryOnFail: true,
+        maxTries: 3,
+        waitBetweenTries: 5000,
     })
     EnsureScheduleSheet = {
         resource: 'sheet',
@@ -103,6 +106,9 @@ export class InterviewSchedulerWorkflow {
         credentials: { googleSheetsOAuth2Api: { id: '24dHedceL8i5PJLH', name: 'Google Sheets account' } },
         onError: 'continueRegularOutput',
         alwaysOutputData: true,
+        retryOnFail: true,
+        maxTries: 3,
+        waitBetweenTries: 5000,
     })
     LoadBookedSlots = {
         resource: 'sheet',
@@ -244,6 +250,9 @@ return [{ json: {
         version: 4.7,
         position: [480, 300],
         credentials: { googleSheetsOAuth2Api: { id: '24dHedceL8i5PJLH', name: 'Google Sheets account' } },
+        retryOnFail: true,
+        maxTries: 3,
+        waitBetweenTries: 5000,
     })
     BookSlot = {
         operation: 'append',
