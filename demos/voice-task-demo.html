@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Voice Note to Task — Audio AI Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #60a5fa; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 0.9fr 1.1fr; gap: 20px; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  .mic-zone {
+    border: 2px dashed #334155; border-radius: 10px; padding: 26px 16px;
+    text-align: center; color: #94a3b8; font-size: 0.9rem;
+  }
+  .mic-btn {
+    width: 84px; height: 84px; border-radius: 50%; border: none; cursor: pointer;
+    background: #2563eb; color: white; font-size: 2rem; transition: all 0.2s;
+    box-shadow: 0 4px 18px rgba(37,99,235,0.4);
+  }
+  .mic-btn:hover { background: #1d4ed8; transform: scale(1.05); }
+  .mic-btn.rec { background: #dc2626; box-shadow: 0 0 0 6px rgba(220,38,38,0.25); animation: pulse 1.2s infinite; }
+  @keyframes pulse { 0%,100% { box-shadow: 0 0 0 6px rgba(220,38,38,0.25);} 50% { box-shadow: 0 0 0 14px rgba(220,38,38,0.08);} }
+  .mic-hint { margin-top: 10px; font-size: 0.78rem; color: #64748b; }
+  .upload-row { margin-top: 14px; }
+  .upload-row input[type=file] { display: none; }
+  .upload-label {
+    display: inline-block; padding: 9px 16px; border-radius: 8px; cursor: pointer;
+    border: 1px solid #334155; background: #0f172a; color: #94a3b8; font-size: 0.8rem; transition: all 0.15s;
+  }
+  .upload-label:hover { border-color: #60a5fa; color: #93c5fd; }
+  .samples { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+  .chip {
+    padding: 8px 12px; border-radius: 18px; border: 1px solid #334155;
+    background: #0f172a; color: #94a3b8; font-size: 0.75rem; cursor: pointer; transition: all 0.15s;
+  }
+  .chip:hover { border-color: #60a5fa; color: #93c5fd; }
+  .chip.warn { border-color: #78350f; color: #fcd34d; }
+  .chip.warn:hover { border-color: #f59e0b; }
+  .chip.bad { border-color: #7f1d1d; color: #fca5a5; }
+  .chip.bad:hover { border-color: #ef4444; }
+  .audio-box { margin-top: 12px; text-align: center; display: none; }
+  .audio-box audio { width: 100%; max-width: 420px; height: 40px; }
+  .audio-box .fname { font-size: 0.72rem; color: #64748b; margin-bottom: 6px; }
+  button.go {
+    width: 100%; padding: 11px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 700; background: #2563eb; color: white; transition: all 0.2s; margin-top: 14px;
+  }
+  button.go:hover { background: #1d4ed8; transform: translateY(-1px); }
+  button.go:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .status-banner {
+    padding: 13px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 700;
+    display: none; font-size: 0.95rem; text-align: center;
+  }
+  .s-valid { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .s-review { background: #422006; border: 1px solid #f59e0b; color: #fcd34d; display: block; }
+  .s-dup { background: #172554; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .s-offtopic { background: #1e293b; border: 1px solid #64748b; color: #cbd5e1; display: block; }
+  .s-error { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .s-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  section.result-block { margin-bottom: 14px; }
+  section.result-block h3 { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .placeholder { color: #64748b; text-align: center; padding: 55px 20px; font-size: 0.9rem; }
+  .transcript {
+    background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 14px 16px;
+    font-size: 0.95rem; color: #e2e8f0; font-style: italic; line-height: 1.5;
+  }
+  .fields { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  @media (max-width: 500px) { .fields { grid-template-columns: 1fr 1fr; } }
+  .kv { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; }
+  .kv .val { font-size: 0.88rem; font-weight: 700; color: #f1f5f9; word-break: break-word; }
+  .kv .lbl { font-size: 0.66rem; color: #64748b; margin-top: 2px; }
+  .checks { list-style: none; }
+  .checks li { padding: 5px 0; font-size: 0.84rem; color: #cbd5e1; }
+  .ok { color: #86efac; } .fail { color: #fca5a5; }
+  .flagbox { background: #0f172a; border: 1px solid #b45309; border-left: 3px solid #f59e0b; border-radius: 8px; padding: 10px 14px; font-size: 0.84rem; color: #fcd34d; }
+  .deadline-note {
+    background: #0f172a; border: 1px solid #3b82f6; border-left: 3px solid #3b82f6;
+    border-radius: 8px; padding: 10px 14px; font-size: 0.84rem; color: #93c5fd; margin-top: 10px;
+  }
+  .engine { color: #64748b; font-size: 0.72rem; line-height: 1.6; }
+  .engine code { color: #94a3b8; }
+  .note { margin-top: 14px; font-size: 0.72rem; color: #475569; line-height: 1.5; }
+  .note code { color: #64748b; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🎙️ Voice Note to Task — Audio AI</h1>
+    <p>Speak or drop a voice note — Whisper transcribes it, the LLM extracts the task in words, and deterministic code resolves the deadline, whitelists the priority and blocks duplicates → n8n portfolio demo</p>
+    <div class="badges">
+      <span class="badge">Groq Whisper v3-turbo · multipart binary</span>
+      <span class="badge">Groq gpt-oss-120b · temp 0.1 · strict JSON</span>
+      <span class="badge">Deadline resolved in code ("next Monday" → real date)</span>
+      <span class="badge">Priority whitelist · category keyword map</span>
+      <span class="badge">Duplicate block by transcript hash</span>
+      <span class="badge">Off-topic audio refused</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>🎤 Voice Note</h2>
+      <div class="mic-zone">
+        <button class="mic-btn" id="micBtn" title="Record from microphone">🎙️</button>
+        <div class="mic-hint" id="micHint">Click to record · click again to stop</div>
+      </div>
+      <div class="upload-row">
+        <label class="upload-label" for="fileInput">📁 …or upload an audio file</label>
+        <input type="file" id="fileInput" accept="audio/*">
+      </div>
+      <div class="samples">
+        <button class="chip" onclick="useSample('assets/voice-task-1.wav', this)">🎧 Sample 1: clean task</button>
+        <button class="chip warn" onclick="useSample('assets/voice-task-2.wav', this)">🎧 Sample 2: vague "next Monday"</button>
+        <button class="chip bad" onclick="useSample('assets/voice-task-3.wav', this)">🎧 Sample 3: off-topic chatter</button>
+      </div>
+      <div class="audio-box" id="audioBox">
+        <div class="fname" id="audioName"></div>
+        <audio id="audioPlayer" controls></audio>
+      </div>
+      <button class="go" id="goBtn" disabled>Extract the task →</button>
+      <div class="note">
+        Browser mic recording uses <code>MediaRecorder</code> (webm/opus); uploaded files are sent with their own MIME type.
+        Demo posts to the public tunnel <code>WEBHOOK_URL</code>; for a local n8n instance change
+        <code>WEBHOOK_URL</code> in this file's source to <code>http://localhost:5678/webhook/voice-task</code>.
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🧾 Result</h2>
+      <div class="status-banner" id="banner"></div>
+      <div id="results">
+        <div class="placeholder" id="placeholder">Record, upload or pick a sample — then press "Extract the task".</div>
+
+        <div id="detail" style="display:none;">
+          <section class="result-block">
+            <h3>Transcript (Whisper)</h3>
+            <div class="transcript" id="transcript"></div>
+          </section>
+
+          <section class="result-block">
+            <h3>Extracted Task</h3>
+            <div class="fields">
+              <div class="kv"><div class="val" id="fTaskId">—</div><div class="lbl">Task ID</div></div>
+              <div class="kv"><div class="val" id="fTitle">—</div><div class="lbl">Title</div></div>
+              <div class="kv"><div class="val" id="fCategory">—</div><div class="lbl">Category (code)</div></div>
+              <div class="kv"><div class="val" id="fPriority">—</div><div class="lbl">Priority (whitelist)</div></div>
+              <div class="kv"><div class="val" id="fDueDate">—</div><div class="lbl">Due date (resolved)</div></div>
+              <div class="kv"><div class="val" id="fDueTime">—</div><div class="lbl">Due time</div></div>
+            </div>
+            <div class="deadline-note" id="deadlineNote" style="display:none;"></div>
+          </section>
+
+          <section class="result-block">
+            <h3>Validation (deterministic)</h3>
+            <ul class="checks" id="checks"></ul>
+          </section>
+
+          <section class="result-block" id="flagBlock" style="display:none;">
+            <h3>Flags</h3>
+            <div class="flagbox" id="flags"></div>
+          </section>
+
+          <section class="result-block">
+            <h3>Pipeline</h3>
+            <div class="engine" id="engine"></div>
+          </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<footer>Part of the <span>n8n AI Portfolio</span> · Hasan Akhtar · Doha — <a href="../index.html" style="color:#60a5fa;">← back to all projects</a></footer>
+
+<script>
+  // Public tunnel by default. Local override:
+  //   const WEBHOOK_URL = 'http://localhost:5678/webhook/voice-task';
+  const WEBHOOK_URL = 'https://chat.hasanakhtar.co.uk/webhook/voice-task';
+
+  const $ = id => document.getElementById(id);
+  let audioB64 = null, mimeType = null, fileName = null;
+
+  function setStatus(text) {
+    $('micHint').textContent = text;
+  }
+
+  // ---------- mic recording ----------
+  let recorder = null, chunks = [], recording = false;
+  $('micBtn').onclick = async () => {
+    if (!recording) {
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recorder = new MediaRecorder(stream, { mimeType: MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus' : 'audio/webm' });
+        chunks = [];
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          const blob = new Blob(chunks, { type: recorder.mimeType });
+          loadBlob(blob, 'mic-recording.webm');
+          setStatus('Recording captured — press "Extract the task"');
+        };
+        recorder.start();
+        recording = true;
+        $('micBtn').classList.add('rec');
+        $('micBtn').textContent = '⏹️';
+        setStatus('Recording… speak now, click again to stop');
+      } catch (err) {
+        setStatus('Mic unavailable: ' + err.message + ' — use a sample or upload instead');
+      }
+    } else {
+      recorder.stop();
+      recording = false;
+      $('micBtn').classList.remove('rec');
+      $('micBtn').textContent = '🎙️';
+    }
+  };
+
+  // ---------- file upload ----------
+  $('fileInput').onchange = e => {
+    const f = e.target.files[0];
+    if (f) loadBlob(f, f.name);
+  };
+
+  // ---------- samples ----------
+  async function useSample(url, btn) {
+    document.querySelectorAll('.chip').forEach(c => c.style.borderColor = '');
+    btn.style.borderColor = '#60a5fa';
+    const res = await fetch(url);
+    const blob = await res.blob();
+    loadBlob(blob, url.split('/').pop());
+    setStatus('Sample loaded — press "Extract the task"');
+  }
+
+  // ---------- shared blob loader ----------
+  function loadBlob(blob, name) {
+    fileName = name;
+    mimeType = blob.type || 'audio/wav';
+    const reader = new FileReader();
+    reader.onload = () => {
+      audioB64 = reader.result.split(',')[1];
+      $('audioPlayer').src = URL.createObjectURL(blob);
+      $('audioName').textContent = '🎧 ' + name + ' · ' + mimeType + ' · ' + Math.round(blob.size / 1024) + ' KB';
+      $('audioBox').style.display = 'block';
+      $('goBtn').disabled = false;
+    };
+    reader.readAsDataURL(blob);
+  }
+
+  // ---------- submit ----------
+  $('goBtn').onclick = async () => {
+    if (!audioB64) return;
+    $('goBtn').disabled = true;
+    $('goBtn').textContent = 'Transcribing & extracting…';
+    banner('s-loading', '⏳ Whisper transcription → LLM extraction → deterministic validation…');
+    $('detail').style.display = 'none';
+    $('placeholder').style.display = 'none';
+    try {
+      const res = await fetch(WEBHOOK_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ audio_base64: audioB64, mime_type: mimeType, submitted_by: 'portfolio-demo', note: 'file: ' + fileName })
+      });
+      const data = await res.json();
+      if (data.error) throw new Error(typeof data.message === 'string' ? data.message : JSON.stringify(data));
+      render(data);
+    } catch (err) {
+      banner('s-error', '❌ ' + err.message);
+    }
+    $('goBtn').disabled = false;
+    $('goBtn').textContent = 'Extract the task →';
+  };
+
+  function banner(cls, text) {
+    const b = $('banner');
+    b.className = 'status-banner ' + cls;
+    b.textContent = text;
+  }
+
+  function esc(s) { const d = document.createElement('div'); d.textContent = s ?? ''; return d.innerHTML; }
+
+  function render(d) {
+    const st = d.status;
+    if (st === 'valid') banner('s-valid', '✅ Valid task — logged to the Tasks sheet (' + (d.task_id ?? '') + ')');
+    else if (st === 'needs_review') banner('s-review', '⚠️ Logged with flags for review');
+    else if (st === 'duplicate') banner('s-dup', '♻️ Duplicate — already on file as ' + (d.duplicate_of ?? '') + ' · not logged again');
+    else if (st === 'off_topic') banner('s-offtopic', '🚫 Off-topic audio — no task, nothing logged');
+    else if (st === 'no_speech') banner('s-offtopic', '🤫 No speech detected — nothing logged');
+    else if (st === 'transcription_failed') banner('s-error', '❌ Transcription failed — ' + ((d.validation?.flags ?? []).join('; ')));
+    else banner('s-review', 'ℹ️ Status: ' + st);
+
+    if (d.transcript) $('transcript').textContent = '“' + d.transcript + '”';
+    $('fTaskId').textContent = d.task_id ?? '—';
+    $('fTitle').textContent = d.extracted?.title ?? '—';
+    $('fCategory').textContent = d.category ?? '—';
+    $('fPriority').textContent = d.priority ?? '—';
+    $('fDueDate').textContent = d.due_date ?? '—';
+    $('fDueTime').textContent = d.due_time ?? '—';
+
+    const dn = $('deadlineNote');
+    if (d.deadline_note) { dn.textContent = '🗓️ ' + d.deadline_note + ' → resolved by code, anchored on today'; dn.style.display = 'block'; }
+    else dn.style.display = 'none';
+
+    const ul = $('checks');
+    ul.innerHTML = '';
+    (d.validation?.checks ?? []).forEach(c => {
+      const li = document.createElement('li');
+      li.innerHTML = (c.pass ? '<span class="ok">✔</span>' : '<span class="fail">✘</span>') + ' ' + esc(c.check);
+      ul.appendChild(li);
+    });
+
+    const flags = (d.validation?.flags ?? []);
+    $('flagBlock').style.display = flags.length ? 'block' : 'none';
+    $('flags').textContent = flags.join(' · ');
+
+    const e = d.engine ?? {};
+    $('engine').innerHTML =
+      'Transcription: <code>' + esc(e.transcription ?? '') + '</code><br>' +
+      'Extraction: <code>' + esc(e.extraction ?? '') + '</code><br>' +
+      'Deadline: <code>' + esc(e.deadline_resolution ?? '') + '</code><br>' +
+      'Storage: <code>' + esc(e.storage ?? '') + '</code>' +
+      (d.stats ? (' · tasks on file: <code>' + esc(String(d.stats.tasks_on_file)) + '</code>') : '');
+
+    $('detail').style.display = 'block';
+  }
+</script>
+</body>
+</html>

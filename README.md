@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Eleven production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, a **natural-language analytics agent (AI plans, deterministic code executes)**, and a **receipt-vision expense tracker (AI extracts, code validates)**.
+> Twelve production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, a **natural-language analytics agent (AI plans, deterministic code executes)**, a **receipt-vision expense tracker (AI extracts, code validates)**, and a **voice-note-to-task audio agent (Whisper transcription, deterministic deadline resolution)**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -21,6 +21,7 @@
 | 9 | **[RAG Knowledge Base Chatbot](#9-rag-knowledge-base-chatbot)** | Document upload → chunker → Ollama embeddings → cosine vector search in code → Groq grounded answer with citations; refuses when coverage is missing | Remote-work question → "2 days/week, line manager approves" ✅ · France question → refused (`no_match`) ✅ · tunnel test 200 OK ✅ |
 | 10 | **[Ask Your Data — NL Analytics Agent](#10-ask-your-data--nl-analytics-agent)** | Plain-English question over a spreadsheet → Groq query plan (strict JSON) → deterministic whitelist validation → pure-JS execution engine → grounded answer; LLM never sees the raw data | Delivered revenue **113,445 QAR** (21/30 rows) ✅ · France question → deterministic `plan_rejected` ✅ · tunnel 200 OK ✅ |
 | 11 | **[Receipt & Expense Tracker — Vision AI](#11-receipt--expense-tracker--vision-ai)** | Receipt photo → Groq vision extraction (strict JSON) → deterministic finance validation (line items, VAT math, date, duplicate hash) → code-assigned category → Sheets register + monthly Gmail digest | Planted **104 QAR overcharge caught** ✅ · duplicate resubmission skipped ✅ · memo image → `not_a_receipt` ✅ · digest email SENT (1,861.70 QAR) ✅ |
+| 12 | **[Voice Note to Task — Audio AI](#12-voice-note-to-task--audio-ai)** | Voice note (mic or file) → Groq Whisper v3-turbo transcription (multipart binary) → Groq gpt-oss-120b task extraction (strict JSON, words only) → deterministic deadline resolver + priority whitelist + transcript-hash dedupe → Sheets Tasks log | Clean task → tomorrow 2 PM resolved to a real date ✅ · vague "next Monday" → code-parsed date + note ✅ · weather chatter → `off_topic` skip ✅ · replay → `duplicate` blocked ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -228,6 +229,35 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 12. Voice Note to Task — Audio AI
+
+**Problem:** Tasks arrive as voice notes — WhatsApp memos, drive-time rambles, meeting whispers. Someone has to replay each one, write it down, guess what "sometime next Monday" means, and re-check whether the same task was already logged last week. The audio modality was also the last missing piece of a complete multimodal portfolio (text → image → audio).
+
+**Solution:** A voice intake pipeline where the AI transcribes and extracts **words only**, and code turns words into a decision:
+- **Intake:** `POST /webhook/voice-task { audio_base64, mime_type }` — the browser demo records from the mic via `MediaRecorder` (webm/opus) or accepts any uploaded audio; the workflow supports wav / webm / mp3 / m4a / ogg / flac
+- **Transcription (Groq `whisper-large-v3-turbo`, multipart binary):** the base64 payload is materialized with a **Convert To File** node and attached to the multipart request as a real binary part — audio in, transcript out
+- **Task extraction (Groq `gpt-oss-120b`, temp 0.1, `response_format: json_object`):** emits ONE strict JSON — title, details, `deadline_raw` (the speaker's *own words*, never a computed date), priority, assignee, category hint. Small talk gets `{"off_topic": true}`
+- **Deadline resolver (code):** deterministic date parser anchored on today — "tomorrow", "day after tomorrow", "next Monday", "in 3 days", ISO dates, dd/mm, "Jan 30" all resolve to a real calendar date; the words are kept in `deadline_note` for auditability ("resolved from: next Monday")
+- **Priority & category (code):** enum whitelist (`high|medium|low`, default medium) + a deterministic keyword map over the extracted text — the LLM's hints are recorded but **code decides**
+- **Duplicate detection (code):** normalized transcript hash (lowercase, whitespace-collapsed, first 120 chars) matched against the Tasks log — a replayed voice note is refused, not logged twice
+- **Decision matrix:** `valid` → log ✅ · `needs_review` (flags) → log with flags · `duplicate` / `off_topic` / `no_speech` / `transcription_failed` → skip
+
+**Engineering detail:**
+- **The multipart binary debugging story** — the first three attempts all failed with Groq's `missing_audio_input`: a Code-node-emitted `binary` property is **not** attached by HTTP Request v4.2 multipart (the `inputBinaryField` param is for whole-body binary), and the enum in this n8n build is `formBinaryData`, **not** `formBinaryField` (which silently degrades to a string `"undefined"` form field). Verified against n8n's own node source inside the container, proven end-to-end on httpbin (`files: ["file"]`, 555 KB), then wired into the real workflow: Build Context (json-only) → **Convert To File** → multipart with `formBinaryData` — a real-world lesson in how silently these multipart bugs hide
+- **Transcript-source bug caught by the deterministic guard** — the first run returned `no_speech` because the validator read `$json.text` from the wrong node; the `transcription_failed`/`no_speech` guards made the failure *visible* instead of silent, and the fix now reads the transcript explicitly from the Transcribe node with an error-item guard
+- **Provider tier limits respected in testing** — Groq's audio endpoint takes a real multipart file (not JSON), Google Sheets' 60 reads/min quota paced the test rounds; the demo audio samples were synthesized deterministically with Windows SAPI TTS so the regression suite is repeatable
+- **Words-in, dates-out separation** — the LLM is contractually forbidden from converting time expressions; "next Monday" stays `deadline_raw` until the code resolves it, so date math is auditable and reproducible
+
+**Live test evidence:**
+- Clean task ("schedule a meeting with the finance team tomorrow at 2 PM… high priority") → transcript ✅ · `deadline_raw` "tomorrow at 2 p.m." → **due 2026-11-13 at 14:00** · priority `high` · category `meeting` · **logged** to `Tasks` ✅
+- Vague deadline ("call the supplier sometime next Monday about invoice 4521") → **resolved to 2026-11-16** with `deadline_note: "resolved from: next Monday"` · category `call` · logged ✅
+- Weather chatter about the Doha corniche → **`off_topic`**, skipped, nothing logged ✅
+- Same clean task replayed → **`duplicate` of TSK-20261112-061843** (transcript hash match), blocked ✅
+- Sheets `Tasks` tab verified via CSV: 2 valid rows with full schema (task_id, transcript, hash, due_date, priority, category, logged_at) ✅
+- Public tunnel (`chat.hasanakhtar.co.uk`) → 200 OK ✅
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -260,7 +290,7 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ## 🛠 Tech Stack
 
-n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`) · **Ollama (`nomic-embed-text`, local 768-dim embeddings)** · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
+n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`, `qwen/qwen3.8-27b` vision, `whisper-large-v3-turbo` audio) · **Ollama (`nomic-embed-text`, local 768-dim embeddings)** · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
 
 ## 🚀 How To Run
 
@@ -286,6 +316,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | `/webhook/ask-data` | POST `{ question }` | NL analytics: Groq query plan → whitelist validation → deterministic execution |
 | `/webhook/receipt-expense` | POST `{ image_base64, mime_type }` | Receipt photo → vision extraction → finance validation → Sheets register |
 | `/webhook/expense-digest` | POST `{}` | Monthly expense digest: category totals → Gmail (also runs via cron on the 1st) |
+| `/webhook/voice-task` | POST `{ audio_base64, mime_type }` | Voice note → Whisper transcription → task extraction → deterministic validation → Sheets log |
 | `/form/kb-upload` | FORM (PDF upload) | Human KB ingest: paste text or upload PDF |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
@@ -296,7 +327,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 11 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 12 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -314,6 +345,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | RAG / Embeddings / Vector Search | RAG Knowledge Base (Ollama embeddings, cosine similarity in code, grounded citations) |
 | NL→Data Analytics / NL2SQL-style Agent | Ask Your Data (Groq query planner, whitelist validator, deterministic JS execution engine) |
 | Vision AI / Multimodal Extraction | Receipt Vision Tracker (Groq qwen3.8 vision, finance-grade validation, duplicate hash, monthly digest) |
+| Voice AI & Speech Processing | Voice Note to Task (Groq Whisper v3-turbo multipart transcription, LLM task extraction, deterministic deadline resolver, transcript-hash dedupe) |
 
 ---
 
