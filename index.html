@@ -145,9 +145,9 @@
 <header class="hero">
   <div class="wrap">
     <h1>AI Automation Specialist — n8n + LLM Engineer</h1>
-    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
+    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, recruitment CV screening, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
     <div class="pills">
-      <span class="pill green">6 workflows, all tested live</span>
+      <span class="pill green">7 workflows, all tested live</span>
       <span class="pill">15+ years — finance, insurance, sales operations</span>
       <span class="pill">Doha, Qatar — open to GCC and remote roles</span>
     </div>
@@ -173,6 +173,7 @@
       <div class="skill"><span>CRM &amp; ERP Integration</span><span class="rating">4/5</span></div>
       <div class="skill"><span>Live Operations Dashboards</span><span class="rating">4/5</span></div>
       <div class="skill"><span>Vercel &amp; Cloudflare Deployment</span><span class="rating">5/5</span></div>
+      <div class="skill"><span>Recruitment &amp; CV Screening</span><span class="rating">4/5</span></div>
     </div>
   </div>
 </section>
@@ -180,7 +181,7 @@
 <section id="projects">
   <div class="wrap">
     <div class="sec-label">Projects</div>
-    <div class="sec-title">Six production pipelines</div>
+    <div class="sec-title">Seven production pipelines</div>
     <div class="sec-sub">Each pipeline follows the same rule: the AI extracts, deterministic code decides. Payouts, approvals and escalations are always auditable.</div>
     <div class="proj-grid">
 
@@ -249,6 +250,19 @@
         </div>
       </div>
 
+      <div class="proj">
+        <div class="proj-head">
+          <h3>CV Screening &amp; Ranking Bot</h3>
+          <span class="status st-blue">3-page PDF CV scored &amp; logged live</span>
+        </div>
+        <div class="proj-body">A recruitment intake form takes candidate details, the job description and a PDF CV. Native PDF extraction feeds a Groq gpt-oss-120b agent that returns a 0-100 match score, verdict, key strengths, skill gaps and red flags — every screening is logged to a Google Sheets ranking table.</div>
+        <div class="proj-foot">
+          <a class="btn primary" href="https://chat.hasanakhtar.co.uk/form/cv-screening">Try the live form</a>
+          <a class="btn" href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio/blob/main/workflows/cv-screening-ranking-bot.workflow.ts">Source</a>
+          <span class="src-path">Groq gpt-oss-120b · Sheets ranking log</span>
+        </div>
+      </div>
+
       <div class="proj" style="grid-column: 1 / -1;">
         <div class="proj-head">
           <h3>Live Ops Dashboard</h3>
@@ -269,12 +283,12 @@
 <section id="architecture">
   <div class="wrap">
     <div class="sec-label">Architecture</div>
-    <div class="sec-title">One pattern, five pipelines</div>
+    <div class="sec-title">One pattern, seven pipelines</div>
     <div class="sec-sub">LLMs run at low temperature for deterministic extraction. Every decision that touches money or escalation is plain code — reviewable, testable, auditable.</div>
-    <div class="arch"># intake            webhook (WhatsApp / invoice / email / claim / GET)
+    <div class="arch"># intake            webhook (WhatsApp / invoice / email / claim / GET) + n8n form (PDF CV upload)
         |
         v
-AI agent            Mistral, strict JSON contract, temperature 0.1-0.3
+AI agent            Mistral / Groq gpt-oss-120b, strict JSON contract, temperature 0.1-0.3
         |
         v
 rules engine        code nodes — finance validation, SLA routing,

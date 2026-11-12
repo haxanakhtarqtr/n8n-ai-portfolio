@@ -95,7 +95,9 @@ export class CvScreeningRankingBotWorkflow {
                 },
             ],
         },
-        options: {},
+        options: {
+            path: 'cv-screening',
+        },
     };
 
     @node({
