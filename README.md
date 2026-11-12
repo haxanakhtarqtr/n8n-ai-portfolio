@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Six production-tested AI automation pipelines built with n8n-as-code and Mistral AI — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, and AI-assisted insurance underwriting.
+> Seven production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, and **recruitment CV screening**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -16,6 +16,7 @@
 | 4 | **[Live Ops Dashboard API](#4-live-ops-dashboard)** | Aggregates KPIs from all pipelines into a real-time dashboard with health monitoring | Serves live validity/escalation/auto-settle rates via GET API |
 | 5 | **[Insurance Claim Intake Bot](#5-insurance-claim-intake-bot)** | AI claim extraction + deterministic underwriting rules: coverage matrix, fraud scoring, 4-tier routing | 3 scenarios: auto-settle ✅ · coverage mismatch caught ✅ · fraud score 5 → SIU ✅ |
 | 6 | **[Restaurant AI Receptionist](#6-restaurant-ai-receptionist)** | Two-workflow chat system: AI receptionist with memory + kitchen API that validates items, prices with VAT 5% and emails invoices | Off-menu item refused with suggestions ✅ · 77.70 QAR order confirmed, invoice emailed ✅ |
+| 7 | **[CV Screening & Ranking Bot](#7-cv-screening--ranking-bot)** | Recruitment intake form: PDF CV text extraction → LLM match score (0–100), verdict, strengths/gaps/red flags → Google Sheets ranking log | 3-page PDF CV parsed → scored & logged to `CV_Screening_Log` ✅ · retry-on-fail against provider rate limits ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -97,6 +98,25 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 7. CV Screening & Ranking Bot
+
+**Problem:** Screening CVs against job descriptions is manual, inconsistent, and untracked — every recruiter scores differently and nothing is logged.
+
+**Solution:** n8n Form intake (candidate details + JD + PDF CV upload) → native PDF text extraction → Groq `gpt-oss-120b` agent (temperature 0.2) with a strict JSON contract → deterministic parser/validator code node → Google Sheets ranking log.
+
+**Output schema per candidate:** `match_score` (0–100) · `verdict` (Strong/Good/Partial/Poor Match) · `experience_years` · `summary` · `key_strengths` · `skill_gaps` · `notable_red_flags` · `recommended_next_step`
+
+**Engineering detail:**
+- **Rate-limit resilience** — agent node retries 3× with 5s backoff after live testing surfaced provider 429s (Mistral) and model decommissioning (Groq Llama models) — the final model choice (`openai/gpt-oss-120b`) was verified directly against the provider's live model list
+- **Side-branch sheet bootstrap** — the log sheet is auto-created by a parallel `onError: continue` node, keeping the data path (parser → append) clean of API-response noise
+- **Strict JSON contract** — parser strips markdown fences and recovers the JSON object even when the model adds prose
+
+**Live test evidence:**
+- 3-page PDF CV (Word-produced) → full text extracted → scored with verdict, strengths and gaps → appended to `CV_Screening_Log` ✅
+- Same form re-run after provider failure → auto-retry succeeded without manual intervention ✅
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -129,7 +149,7 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ## 🛠 Tech Stack
 
-n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
+n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/gpt-oss-120b`) · LangChain agent nodes · Google Sheets API · Gmail API (HTML invoices) · Mattermost webhooks · Meta WhatsApp webhook format · n8n Forms (file uploads) · Cloudflare tunnel (public demos) · Vanilla HTML/CSS/JS demo UIs
 
 ## 🚀 How To Run
 
@@ -137,7 +157,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent
 
 **Self-host:**
 
-1. Import any `workflows/*.workflow.ts` via [n8nac](https://www.npmjs.com/package/n8nac) (`npx n8nac push <file> --verify`), add Mistral + Gmail + Google Sheets credentials, activate.
+1. Import any `workflows/*.workflow.ts` via [n8nac](https://www.npmjs.com/package/n8nac) (`npx n8nac push <file> --verify`), add Mistral + Groq + Gmail + Google Sheets credentials, activate.
 2. Endpoints (after activation):
 
 | Endpoint | Method | Purpose |
@@ -148,6 +168,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent
 | `/webhook/insurance-claim` | POST claim fields | Underwriting decision engine |
 | `/webhook/restaurant-order` | POST `{ items, customer_email }` | Menu validation, VAT pricing, invoice email |
 | `/webhook/resto-chat-trigger-01/chat` | POST `{ chatInput }` | AI receptionist conversation |
+| `/form/cv-screening` | FORM (PDF upload) | CV screening: 0–100 match score → Google Sheets log |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
 3. Demos: open any file in `demos/` in a browser. They default to the public tunnel; for a local instance, change the base URL constant at the top of each demo's JS back to `localhost:5678`.
@@ -157,7 +178,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 6 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 7 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -169,6 +190,8 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · LangChain agent
 | Conversational AI Agents (24/7 chat) | Restaurant AI Receptionist (chat intake + memory + order tool) |
 | Automated Invoicing & Email | Restaurant Order API (HTML invoice via Gmail) |
 | Process Optimization (5/5) | Auto-settle tiering, outbox pattern, graceful degradation |
+| Recruitment / Talent Screening | CV Screening Bot (0–100 match scoring, strengths/gaps, Sheets ranking log) |
+| AI Model Vendor Resilience | Live provider model-list verification + retry-on-fail after Groq/Mistral API changes |
 
 ---
 
