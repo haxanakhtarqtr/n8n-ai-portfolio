@@ -145,9 +145,9 @@
 <header class="hero">
   <div class="wrap">
     <h1>AI Automation Specialist — n8n + LLM Engineer</h1>
-    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, a complete recruitment funnel (CV screening → interview scheduling), a RAG knowledge base with local-embedding vector search, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
+    <p class="lead">I design and build production automation pipelines: invoice data extraction with finance-grade validation, WhatsApp lead CRM, email triage with sentiment detection, insurance claim underwriting, a complete recruitment funnel (CV screening → interview scheduling), a RAG knowledge base with local-embedding vector search, a natural-language analytics agent where the AI plans and deterministic code executes, and a live operations dashboard. Everything below is deployed, tested and version-controlled.</p>
     <div class="pills">
-      <span class="pill green">9 workflows, all tested live</span>
+      <span class="pill green">10 workflows, all tested live</span>
       <span class="pill">15+ years — finance, insurance, sales operations</span>
       <span class="pill">Doha, Qatar — open to GCC and remote roles</span>
     </div>
@@ -175,6 +175,7 @@
       <div class="skill"><span>Vercel &amp; Cloudflare Deployment</span><span class="rating">5/5</span></div>
       <div class="skill"><span>Recruitment &amp; CV Screening</span><span class="rating">4/5</span></div>
       <div class="skill"><span>Scheduling &amp; Calendar Automation</span><span class="rating">4/5</span></div>
+      <div class="skill"><span>NL→Data Analytics (NL2SQL-style)</span><span class="rating">4/5</span></div>
     </div>
   </div>
 </section>
@@ -182,7 +183,7 @@
 <section id="projects">
   <div class="wrap">
     <div class="sec-label">Projects</div>
-    <div class="sec-title">Nine production pipelines</div>
+    <div class="sec-title">Ten production pipelines</div>
     <div class="sec-sub">Each pipeline follows the same rule: the AI extracts, deterministic code decides. Payouts, approvals and escalations are always auditable.</div>
     <div class="proj-grid">
 
@@ -290,6 +291,19 @@
         </div>
       </div>
 
+      <div class="proj">
+        <div class="proj-head">
+          <h3>Ask Your Data — NL Analytics Agent</h3>
+          <span class="status st-green">Nonsense question rejected deterministically</span>
+        </div>
+        <div class="proj-body">Plain-English questions over a live spreadsheet: a Groq planner (temp 0.1, strict JSON) turns the question into a query plan, a code-node validator whitelists every field, operator and value, and a pure-JS engine executes filter/group/aggregate/sort deterministically — the LLM never sees the raw rows, and every number in the answer comes from code, not the AI. Unrelated questions are rejected with a deterministic plan_rejected verdict.</div>
+        <div class="proj-foot">
+          <a class="btn primary" href="demos/ask-data-demo.html">Open demo</a>
+          <a class="btn" href="https://github.com/haxanakhtarqtr/n8n-ai-portfolio/blob/main/workflows/Ask%20Your%20Data%20-%20NL%20Analytics%20Agent.workflow.ts">Source</a>
+          <span class="src-path">Groq planner · whitelist validator · code executor</span>
+        </div>
+      </div>
+
       <div class="proj" style="grid-column: 1 / -1;">
         <div class="proj-head">
           <h3>Live Ops Dashboard</h3>
@@ -310,7 +324,7 @@
 <section id="architecture">
   <div class="wrap">
     <div class="sec-label">Architecture</div>
-    <div class="sec-title">One pattern, nine pipelines</div>
+    <div class="sec-title">One pattern, ten pipelines</div>
     <div class="sec-sub">LLMs run at low temperature for deterministic extraction. Every decision that touches money or escalation is plain code — reviewable, testable, auditable.</div>
     <div class="arch"># intake            webhook (WhatsApp / invoice / email / claim / GET) + n8n form (PDF CV upload)
         |

@@ -1,6 +1,6 @@
 # 🤖 AI Automation Portfolio — n8n + LLM Production Pipelines
 
-> Nine production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, and a **RAG knowledge base chatbot with hand-rolled vector search**.
+> Ten production-tested AI automation pipelines built with n8n-as-code — intelligent document processing, WhatsApp lead CRM, email triage with sentiment detection, live operations dashboards, AI-assisted insurance underwriting, a complete **recruitment funnel: CV screening → interview scheduling**, a **RAG knowledge base chatbot with hand-rolled vector search**, and a **natural-language analytics agent (AI plans, deterministic code executes)**.
 
 **Author:** Hasan Akhtar — AI & Digital Growth Specialist · Doha, Qatar · 15+ years across automation, sales, insurance underwriting, and finance
 
@@ -19,6 +19,7 @@
 | 7 | **[CV Screening & Ranking Bot](#7-cv-screening--ranking-bot)** | Recruitment intake form: PDF CV text extraction → LLM match score (0–100), verdict, strengths/gaps/red flags → Google Sheets ranking log | 3-page PDF CV parsed → scored & logged to `CV_Screening_Log` ✅ · retry-on-fail against provider rate limits ✅ |
 | 8 | **[Interview Scheduler](#8-interview-scheduler)** | Deterministic slot engine (Sun–Thu, Doha hours): books first free slot, prevents double-booking, Gmail invite with Add-to-Calendar, waitlist fallback | Booking #1 → `Sun 10:00` ✅ · Booking #2 auto-shifted to `11:00` (double-booking blocked) ✅ · invite emailed ✅ |
 | 9 | **[RAG Knowledge Base Chatbot](#9-rag-knowledge-base-chatbot)** | Document upload → chunker → Ollama embeddings → cosine vector search in code → Groq grounded answer with citations; refuses when coverage is missing | Remote-work question → "2 days/week, line manager approves" ✅ · France question → refused (`no_match`) ✅ · tunnel test 200 OK ✅ |
+| 10 | **[Ask Your Data — NL Analytics Agent](#10-ask-your-data--nl-analytics-agent)** | Plain-English question over a spreadsheet → Groq query plan (strict JSON) → deterministic whitelist validation → pure-JS execution engine → grounded answer; LLM never sees the raw data | Delivered revenue **113,445 QAR** (21/30 rows) ✅ · France question → deterministic `plan_rejected` ✅ · tunnel 200 OK ✅ |
 
 Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versionable in Git, and deployed to a live n8n instance.
 
@@ -168,6 +169,36 @@ Every workflow is written as code (`.workflow.ts` via **n8n-as-code**), versiona
 
 ---
 
+### 10. Ask Your Data — NL Analytics Agent
+
+**Problem:** Business users want answers from their spreadsheets ("what's our revenue?", "who owes the most?") without writing formulas — but a raw NL2SQL agent that lets the LLM compute or fetch data is a hallucination risk: wrong sums, invented rows, queries that leak the dataset.
+
+**Solution:** A natural-language analytics agent where **the AI only plans, and code decides**:
+- **Intake:** `POST /webhook/ask-data { question }` → Google Sheets `Sales_Orders` load (30 rows, Sep–Nov 2026)
+- **Schema catalog (code):** infers field types, normalizes values, and attaches **schema-linking metadata** — field descriptions (`FIELD_DOCS`), real `date_range` min/max for date fields, `distinct_values` for string fields. **The LLM never sees a raw data row — only this catalog.**
+- **Planner (Groq `gpt-oss-120b`, temp 0.1, `response_format: json_object`):** emits ONE strict JSON query plan — filters / group_by / aggregate / sort / limit / select — or `{"unanswerable": true, "reason": ...}` for questions outside the dataset
+- **Validator (code):** whitelists every field, operator and value against the catalog; honors the planner's `unanswerable` verdict; anything unparseable or out-of-contract is rejected **deterministically** — it never reaches the executor
+- **Executor (code):** a pure deterministic JS engine — filter → group → aggregate (sum/avg/min/max/count) → sort → limit → select. **Every number in the final answer comes from here, not from the LLM.**
+- **Phraser (Groq, temp 0.2):** explains the computed result in natural business English, grounded strictly on the executor's numbers
+
+**Engineering detail:**
+- **NL2SQL-style schema linking** — the first "Ayesha Khan in October" test returned 0 rows because the planner mapped her to `customer` instead of `rep`; adding field descriptions + distinct_values to the catalog fixed it (4 orders, correct `rep` filter)
+- **Real date ranges in the catalog** — before this, "orders in November" planned `2023-11-01` and counted 0; with `date_range: ["2026-09-02", "2026-11-08"]` the planner uses the actual years
+- **Deterministic refusal (data-side)** — the RAG bot refuses when knowledge is missing; this agent refuses when the *question* doesn't map onto the schema: "What is the capital of France?" → `plan_rejected` with the planner's reason, zero LLM phrasing
+- **Full transparency** — every response carries the executed plan, result rows, `rows_scanned`/`rows_matched` telemetry and the engine stack, so an auditor can recompute the answer from the plan alone
+
+**Live test evidence (9-question suite, all ✅):**
+- "Total revenue across all delivered orders" → **113,445 QAR**, plan `status eq Delivered + sum(total_qar)`, 21/30 rows matched ✅
+- "Top 3 customers by revenue" → Qatar Logistics **49,225**, Gulf Hospitality 31,810, Al Mana Retail 26,560 ✅
+- "Pending orders above 5000 QAR" → 3 orders (SO-1015, SO-1028, SO-1010) with multi-filter + column select ✅
+- "Average order value per sales rep" → 6,024 / 5,600.5 / 4,626 per rep ✅
+- "Orders in November" → count **3** inside the real 2026 date range ✅
+- "Orders from Ayesha Khan in October" → `rep` filter (schema linking) + 4 orders ✅
+- "What is the capital of France?" → **deterministic `plan_rejected`** ✅
+- Public tunnel query → 200 OK, 113,445 verified ✅
+
+---
+
 ## 🏗️ Shared Architecture
 
 ```
@@ -223,6 +254,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | `/webhook/interview-scheduler` | POST `{ name, email, role }` | Deterministic interview slot booking + calendar invite |
 | `/webhook/knowledge-base` | POST `{ question }` | RAG query: cosine search → grounded answer with citations |
 | `/webhook/knowledge-base-upload` | POST `{ title, type, text }` | Programmatic KB ingest: chunk → embed → index |
+| `/webhook/ask-data` | POST `{ question }` | NL analytics: Groq query plan → whitelist validation → deterministic execution |
 | `/form/kb-upload` | FORM (PDF upload) | Human KB ingest: paste text or upload PDF |
 | `/webhook/dashboard-stats` | GET | Live KPIs for all pipelines |
 
@@ -233,7 +265,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | CV Claim | Proof |
 |----------|-------|
 | Intelligent Document Processing (IDP) | Invoice Extractor |
-| n8n Workflow Automation (5/5) | All 9 workflows, as-code |
+| n8n Workflow Automation (5/5) | All 10 workflows, as-code |
 | Connect Email/WhatsApp/Web Forms to CRM | WhatsApp CRM + Triage Agent |
 | Auto-tag urgency and priority | Triage Agent (critical/high/medium/low + SLA) |
 | Sentiment Detection (4/5) | Triage Agent (−1..+1 scoring, anger cues) |
@@ -249,6 +281,7 @@ n8n (n8n-as-code `.workflow.ts`) · Mistral AI (ministral-3b) · Groq (`openai/g
 | Interview Coordination & Scheduling | Interview Scheduler (double-booking prevention, calendar invites, waitlist) |
 | AI Model Vendor Resilience | Live provider model-list verification + retry-on-fail after Groq/Mistral API changes |
 | RAG / Embeddings / Vector Search | RAG Knowledge Base (Ollama embeddings, cosine similarity in code, grounded citations) |
+| NL→Data Analytics / NL2SQL-style Agent | Ask Your Data (Groq query planner, whitelist validator, deterministic JS execution engine) |
 
 ---
 

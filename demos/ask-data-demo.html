@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ask Your Data — Live Demo</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+    color: #e2e8f0; min-height: 100vh; padding: 24px;
+  }
+  .container { max-width: 1150px; margin: 0 auto; }
+  header { text-align: center; margin-bottom: 28px; }
+  header h1 { font-size: 1.9rem; color: #60a5fa; margin-bottom: 6px; }
+  header p { color: #94a3b8; font-size: 0.95rem; }
+  .badges { margin-top: 10px; }
+  .badge {
+    display: inline-block; padding: 4px 12px; border-radius: 20px;
+    font-size: 0.75rem; margin: 3px; border: 1px solid #334155;
+    background: #1e293b; color: #94a3b8;
+  }
+  .grid { display: grid; grid-template-columns: 0.85fr 1.15fr; gap: 20px; }
+  @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b; border: 1px solid #334155; border-radius: 12px;
+    padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+  }
+  .card h2 { font-size: 1.05rem; color: #f1f5f9; margin-bottom: 12px; }
+  textarea {
+    width: 100%; background: #0f172a; color: #cbd5e1; border: 1px solid #334155;
+    border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; resize: vertical; min-height: 84px;
+    font-family: inherit;
+  }
+  textarea:focus { outline: none; border-color: #60a5fa; }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .chip {
+    padding: 7px 11px; border-radius: 18px; border: 1px solid #334155;
+    background: #0f172a; color: #94a3b8; font-size: 0.74rem; cursor: pointer; transition: all 0.15s;
+    text-align: left;
+  }
+  .chip:hover { border-color: #60a5fa; color: #93c5fd; }
+  .chip.danger { border-color: #7f1d1d; color: #fca5a5; }
+  .chip.danger:hover { border-color: #ef4444; color: #fecaca; }
+  .btn-row { margin-top: 14px; }
+  button.ask {
+    width: 100%; padding: 11px 18px; border: none; border-radius: 8px; cursor: pointer;
+    font-size: 0.9rem; font-weight: 700; background: #2563eb; color: white; transition: all 0.2s;
+  }
+  button.ask:hover { background: #1d4ed8; transform: translateY(-1px); }
+  button.ask:disabled { background: #475569; cursor: not-allowed; transform: none; }
+  .status-banner {
+    padding: 13px 16px; border-radius: 8px; margin-bottom: 14px; font-weight: 700;
+    display: none; font-size: 0.95rem; text-align: center;
+  }
+  .s-answer  { background: #052e16; border: 1px solid #22c55e; color: #86efac; display: block; }
+  .s-reject  { background: #450a0a; border: 1px solid #ef4444; color: #fca5a5; display: block; }
+  .s-loading { background: #1e3a5f; border: 1px solid #3b82f6; color: #93c5fd; display: block; }
+  .answer-box {
+    background: #0f172a; border: 1px solid #334155; border-left: 3px solid #22c55e;
+    border-radius: 8px; padding: 14px 16px; font-size: 0.95rem; line-height: 1.55;
+  }
+  .answer-box.rejected { border-left-color: #ef4444; }
+  table.data {
+    width: 100%; border-collapse: collapse; font-size: 0.78rem; margin-top: 4px;
+  }
+  table.data th {
+    background: #0f172a; color: #93c5fd; text-align: left; padding: 7px 10px;
+    border: 1px solid #334155; font-weight: 700; white-space: nowrap;
+  }
+  table.data td {
+    padding: 6px 10px; border: 1px solid #283548; color: #cbd5e1; font-family: 'Consolas', monospace;
+  }
+  table.data tr:nth-child(even) td { background: #172033; }
+  .table-scroll { overflow-x: auto; border-radius: 8px; border: 1px solid #334155; }
+  details.plan {
+    background: #0f172a; border: 1px dashed #334155; border-radius: 8px;
+    padding: 10px 14px; margin-bottom: 12px;
+  }
+  details.plan summary { cursor: pointer; font-size: 0.8rem; color: #94a3b8; font-weight: 600; }
+  details.plan pre {
+    margin-top: 8px; font-size: 0.72rem; color: #86efac; font-family: 'Consolas', monospace;
+    white-space: pre-wrap; word-break: break-word;
+  }
+  .kv-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 4px; }
+  @media (max-width: 500px) { .kv-grid { grid-template-columns: 1fr; } }
+  .kv { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px; }
+  .kv .val { font-size: 0.9rem; font-weight: 700; color: #f1f5f9; }
+  .kv .lbl { font-size: 0.66rem; color: #64748b; margin-top: 2px; }
+  section.result-block { margin-bottom: 12px; }
+  section.result-block h3 { font-size: 0.75rem; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .placeholder { color: #64748b; text-align: center; padding: 55px 20px; font-size: 0.9rem; }
+  .kb-note { margin-top: 14px; font-size: 0.72rem; color: #475569; line-height: 1.5; }
+  .kb-note code { color: #64748b; }
+  .meta { color: #64748b; font-size: 0.74rem; margin-top: 8px; text-align: right; }
+  footer { text-align: center; margin-top: 28px; color: #64748b; font-size: 0.8rem; }
+  footer span { color: #60a5fa; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>📊 Ask Your Data</h1>
+    <p>Plain English questions over a live spreadsheet — the AI plans, deterministic code executes, numbers never come from the LLM · n8n portfolio demo</p>
+    <div class="badges">
+      <span class="badge">Groq planner · temp 0.1 · strict JSON</span>
+      <span class="badge">Whitelist validator (fields, ops, values)</span>
+      <span class="badge">Deterministic executor in code</span>
+      <span class="badge">LLM never touches the data</span>
+      <span class="badge">Deterministic refusal on nonsense</span>
+      <span class="badge">Schema linking (descriptions + distinct values)</span>
+    </div>
+  </header>
+
+  <div class="grid">
+    <div class="card">
+      <h2>❓ Your Question</h2>
+      <textarea id="question" placeholder="e.g. Who are the top 3 customers by total revenue?"></textarea>
+      <div class="chips">
+        <button class="chip" onclick="useChip(this)">What is the total revenue across all delivered orders?</button>
+        <button class="chip" onclick="useChip(this)">Who are the top 3 customers by total revenue?</button>
+        <button class="chip" onclick="useChip(this)">List pending orders above 5000 QAR</button>
+        <button class="chip" onclick="useChip(this)">What is the average order value for each sales rep?</button>
+        <button class="chip" onclick="useChip(this)">How many orders were placed in November?</button>
+        <button class="chip" onclick="useChip(this)">Which product sold the highest total quantity?</button>
+        <button class="chip danger" onclick="useChip(this)">What is the capital of France?</button>
+      </div>
+      <div class="btn-row">
+        <button class="ask" id="askBtn" onclick="askData()">📊 Ask the Dataset</button>
+      </div>
+      <p class="kb-note">
+        <b>Dataset:</b> <i>Sales_Orders</i> — 30 orders (Sep–Nov 2026): customer, product, qty, unit price, total (QAR), status, order date, sales rep.<br><br>
+        ⚙️ Endpoint: this demo posts to the public tunnel. For a local instance, change
+        <code>WEBHOOK_URL</code> to <code>http://localhost:5678</code>. The whitelist and executor live in the
+        <code>Validate Plan</code> and <code>Execute Plan</code> code nodes.
+      </p>
+    </div>
+
+    <div class="card">
+      <h2>🤖 Query Result</h2>
+      <div id="statusBanner" class="status-banner"></div>
+      <div id="resultArea"><div class="placeholder">Answer, executed plan and result table will appear here</div></div>
+      <div class="meta" id="metaInfo"></div>
+    </div>
+  </div>
+
+  <footer>Built by <span>Hasan Akhtar</span> — AI &amp; Digital Growth Specialist, Doha Qatar · n8n Portfolio Demo · The AI plans, the code decides</footer>
+</div>
+
+<script>
+// Default: public tunnel. For local n8n: 'http://localhost:5678/webhook/ask-data'
+const WEBHOOK_URL = 'https://chat.hasanakhtar.co.uk/webhook/ask-data';
+
+function useChip(btn) { document.getElementById('question').value = btn.textContent; }
+function esc(s) { return String(s == null ? '' : s); }
+const fmt = n => (typeof n === 'number' && !Number.isInteger(n)) ? n.toFixed(2) : esc(n);
+
+function resultTable(rows) {
+  if (!rows || !rows.length) return '<div style="color:#64748b;font-size:0.82rem;padding:10px 4px;">No matching rows.</div>';
+  const cols = [...new Set(rows.flatMap(r => Object.keys(r)))].filter(c => c !== 'row_number');
+  if (cols.length === 1 && (cols[0] === 'value')) {
+    return '<div class="kv-grid"><div class="kv"><div class="val">' + fmt(rows[0].value) + '</div><div class="lbl">computed value</div></div></div>';
+  }
+  const head = cols.map(c => '<th>' + esc(c) + '</th>').join('');
+  const body = rows.map(r => '<tr>' + cols.map(c => '<td>' + fmt(r[c]) + '</td>').join('') + '</tr>').join('');
+  return '<div class="table-scroll"><table class="data"><thead><tr>' + head + '</tr></thead><tbody>' + body + '</tbody></table></div>';
+}
+
+async function askData() {
+  const question = document.getElementById('question').value.trim();
+  if (!question) { alert('Type a question (or click a sample chip).'); return; }
+
+  const banner = document.getElementById('statusBanner');
+  const resultArea = document.getElementById('resultArea');
+  const btn = document.getElementById('askBtn');
+  const meta = document.getElementById('metaInfo');
+
+  btn.disabled = true; btn.textContent = '⏳ Planning → validating → executing...';
+  banner.className = 'status-banner s-loading';
+  banner.textContent = '⚙️ Groq drafting a query plan · whitelist validation · deterministic execution';
+  resultArea.innerHTML = '<div class="placeholder">Waiting for the analytics pipeline...</div>';
+  const startTime = performance.now();
+
+  try {
+    const response = await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ question })
+    });
+    const data = await response.json();
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(1);
+    const rejected = data.status === 'plan_rejected';
+
+    banner.className = 'status-banner ' + (rejected ? 's-reject' : 's-answer');
+    banner.textContent = rejected
+      ? '🛡 Plan rejected — question does not map onto this dataset'
+      : '✅ Answered from ' + (data.stats ? data.stats.rows_matched : '?') + ' matched row(s) of ' + (data.stats ? data.stats.rows_scanned : '?');
+
+    let html = '<section class="result-block"><h3>Answer' + (rejected ? '' : ' (computed by code, phrased by LLM)') + '</h3>' +
+      '<div class="answer-box' + (rejected ? ' rejected' : '') + '">' + esc(data.answer || '(empty)') + '</div></section>';
+
+    if (data.plan) {
+      html += '<section class="result-block"><h3>Executed plan</h3>' +
+        '<details class="plan"' + (rejected ? '' : ' open') + '><summary>Query plan ' + (rejected ? '(rejected by validator)' : '(validated &amp; executed in code)') + '</summary><pre>' + esc(JSON.stringify(data.plan, null, 2)) + '</pre></details></section>';
+    }
+
+    if (!rejected && data.result_rows) {
+      html += '<section class="result-block"><h3>Result rows (from the executor)</h3>' + resultTable(data.result_rows) + '</section>';
+    }
+
+    if (data.stats) {
+      html += '<section class="result-block"><h3>Pipeline telemetry</h3><div class="kv-grid">' +
+        '<div class="kv"><div class="val">' + data.stats.rows_scanned + '</div><div class="lbl">rows scanned</div></div>' +
+        '<div class="kv"><div class="val">' + data.stats.rows_matched + '</div><div class="lbl">rows matched</div></div>' +
+        '<div class="kv"><div class="val">' + elapsed + 's</div><div class="lbl">end-to-end latency</div></div>' +
+      '</div></section>';
+    }
+
+    resultArea.innerHTML = html;
+    meta.textContent = 'POST ' + WEBHOOK_URL.replace('https://', '') + ' · responded in ' + elapsed + 's';
+  } catch (e) {
+    banner.className = 'status-banner s-reject';
+    banner.textContent = '❌ Query failed';
+    resultArea.innerHTML = '<div class="placeholder">' + esc(e.message) + '<br><br>Check that the workflow is active and the endpoint URL is correct.</div>';
+  } finally {
+    btn.disabled = false; btn.textContent = '📊 Ask the Dataset';
+  }
+}
+</script>
+</body>
+</html>
